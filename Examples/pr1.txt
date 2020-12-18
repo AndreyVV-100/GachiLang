@@ -1,0 +1,25 @@
+♂sex♂ "":
+AAAAH
+	♂bucks♂   = 300$
+	♂fisting♂ = 300$
+	
+	♂fantasies♂ "♂bucks♂ == ♂fisting♂":
+	AAAAH
+		♂bucks♂ = 0$
+		♂fisting♂ (♂bucks♂, 300)$
+	YEAAH
+	
+	♂next door♂ 0$
+YEAAH
+
+♂fisting♂ "♂cock♂, ♂finger♂:
+AAAAH
+
+	♂let's go♂ "♂cock♂ != ♂finger♂":
+	AAAAH
+		♂suck♂ "♂cock♂"$
+		♂cock♂ = ♂cock♂ + 1$
+	YEAAH
+	
+	♂next door♂ cock$
+YEAAH

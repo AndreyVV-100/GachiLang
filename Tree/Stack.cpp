@@ -332,6 +332,9 @@ void StackLog(Stack* stk)
 	for (int element = 0; element < stk->capacity; element++)
 		fprintf (file, "[%d] = %lf\n", element, stk->buffer[element]);
 		*/
+	for (int i_elem = 0; i_elem < stk->size; i_elem++)
+		printf ("Type: %d - %s\n", stk->buffer[i_elem].type, (stk->buffer[i_elem].ind) ? stk->buffer[i_elem].ind : "");
+
 	fprintf (file, "\n" "End of log.\n");
 	fclose  (file);
 

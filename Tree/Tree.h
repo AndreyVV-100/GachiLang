@@ -29,10 +29,10 @@
                       }
 
 #define require(what) if ((*el_now)->type != what) \
-                          require_exit;
+                          require_exit
 
 #define require_ind   if ((*el_now)->type != IND || (*el_now)->ind == nullptr) \
-                          require_exit;
+                          require_exit
 
 #define next *el_now += 1
 
@@ -47,7 +47,9 @@ enum Types
     ARITH = 6,
     NUM   = 7,
     VAR   = 8,
-    IND   = 9
+    IND   = 9,
+    RET   = 10,
+    COND  = 11
 };
 
 enum LexResult
@@ -149,6 +151,8 @@ element* GetArith     (element** el_now);
 
 element* GetCall      (element** el_now);
 
+element* GetCallParam (element** el_now);
+
 element* GetReturn    (element** el_now);
 
 element* GetCond      (element** el_now);
@@ -162,13 +166,3 @@ element* GetDegree    (element** el_now);
 element* GetUnary     (element** el_now);
 
 element* GetP         (element** el_now);
-
-/*
-Old code:
-
-element* InsertHead   (Tree* tree, Types type, double num, char symb);
-
-element* InsertLeft  (element* el, Types type, double num, char symb);
-
-element* InsertRight (element* el, Types type, double num, char symb);
-*/

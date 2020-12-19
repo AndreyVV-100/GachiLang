@@ -4,8 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # MY IGNORE
-.png
-.dot
+*.png
+*.dot
 
 # User-specific files
 *.rsuser

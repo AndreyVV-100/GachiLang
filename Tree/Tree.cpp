@@ -10,7 +10,7 @@
 // Тип перечисления не входит в область. Старайтесь использовать "enum class" вместо "enum".
 #pragma warning (disable : 26812)
 
-element* PARSE_ERR = (element*)1;
+element* PARSE_ERR = (element*) 1;
 
 void TreeConstructor (Tree* tree)
 {
@@ -418,8 +418,6 @@ element* GetFunc      (element** el_now)
     check_parse (el_result->right);
 
     el_result->type = FUNC;
-    require (BODY);
-    next;
     return el_result;
 }
 
@@ -442,12 +440,13 @@ element* GetFuncParam (element** el_now)
 
     while ((*el_now)->type != PARAM)
     {
-        require (IND);
-
+        require_ind;
+        (*el_now)->type = PARAM;
         ((*el_now) - 1)->left = *el_now;
         next;
     }
     
+    next;
     return el_result;
 }
 
@@ -476,6 +475,8 @@ element* GetBody      (element** el_now)
         check_parse (go_LR);
     }
 
+    require (BODY);
+    next;
     return el_result;
 }
 
@@ -500,17 +501,17 @@ element* GetOper      (element** el_now)
     TryGet (GetArith);
     TryGet (GetCall);
     TryGet (GetReturn);
-    TryGet (GetCond);
 
     #undef TryGet
-    require_exit;
+    return GetCond (el_now);
 }
 
 element* GetArith     (element** el_now)
 {
     parse_ass;
+    require_ind;
 
-    if ((*el_now)->type != IND || (*el_now + 1)->type != ARITH)
+    if ((*el_now + 1)->type != ARITH)
         return nullptr;
 
     if (strcmp ("=", (*el_now + 1)->ind))
@@ -528,17 +529,136 @@ element* GetArith     (element** el_now)
 
 element* GetCall      (element** el_now)
 {
-    return nullptr;
+    parse_ass;
+    require_ind;
+
+    if ((*el_now + 1)->type != PARAM)
+        return nullptr;
+
+    element* el_result = *el_now;
+    next;
+
+    el_result->left = GetCallParam (el_now);
+    check_parse (el_result->left);
+    el_result->type = FUNC;
+    return el_result;
+}
+
+element* GetCallParam (element** el_now)
+{
+    parse_ass;
+
+    require (PARAM);
+    next;
+
+    if ((*el_now)->type == PARAM)
+    {
+        next;
+        return nullptr;
+    }
+
+    if ((*el_now)->type != NUM)
+    {
+        require_ind;
+        (*el_now)->type = VAR;
+    }
+
+    element* el_result = *el_now;
+    next;
+
+    while ((*el_now)->type != PARAM)
+    {
+        if ((*el_now)->type != NUM)
+        {
+            require_ind;
+            (*el_now)->type = VAR;
+        }
+
+        ((*el_now) - 1)->left = *el_now;
+        next;
+    }
+
+    next;
+    return el_result;
 }
 
 element* GetReturn    (element** el_now)
 {
-    return nullptr;
+    parse_ass;
+    require_ind;
+
+    const char   return_str[] = "next door";
+    const size_t return_size  = sizeof (return_str) + 5; // With attention to male symbol
+
+    if ((*el_now)->len != return_size || strncmp (return_str, (*el_now)->ind + 3, (*el_now)->len - 6)) // +3 and -6 - skip male symbol
+        return nullptr;
+
+    element* el_result = *el_now;
+    next;
+
+    el_result->left = GetE (el_now);
+    check_parse (el_result->left);
+    el_result->type = RET;
+    return el_result;
 }
 
 element* GetCond      (element** el_now)
 {
-    return nullptr;
+    parse_ass;
+    require_ind;
+
+    const char   if_str[] = "fantasies";
+    const size_t if_size  = sizeof (if_str) + 5; // With attention to male symbol
+    const char   while_str[] = "let's go";
+    const size_t while_size  = sizeof (while_str) + 5; // With attention to male symbol
+
+    if ((*el_now)->len != if_size && (*el_now)->len != while_size) // +3 and -6 - skip male symbol
+        return nullptr;
+
+    if (strncmp (if_str, (*el_now)->ind + 3, (*el_now)->len - 6) && strncmp (while_str, (*el_now)->ind + 3, (*el_now)->len - 6))
+        return nullptr;
+
+    element* el_result = *el_now;
+    next;
+
+    el_result->left = GetE (el_now);
+    check_parse (el_result->left);
+
+    if ((*el_now)->type == ARITH && 
+        (*el_now)->len  == 1     &&
+      *((*el_now)->ind) != '>'   &&
+      *((*el_now)->ind) != '<')
+            require_exit;
+            
+    (*el_now)->left = el_result->left;
+    el_result->left = *el_now;
+    next;
+
+    el_result->left->right = GetE (el_now);
+    check_parse (el_result->left->right);
+
+    el_result->right = GetBody (el_now);
+    check_parse (el_result->right);
+    el_result->type = COND;
+    
+    // Gypsy focuses
+    if ((*el_now - 1)->type == LR)
+    {
+        // *el_now - 1 == el_result->right
+        el_result->right    = el_result->right->left;
+    }
+
+    else
+    {
+        // (*el_now - 1)->type == BODY - useless element, I can use it for good deed.
+        (*el_now - 1)->type = LR;
+        strcpy((*el_now - 1)->ind, "$");    
+    }
+
+    (*el_now - 1)->left = el_result;
+    el_result = *el_now - 1;
+    // End of gypsy focuses
+    return el_result;
 }
 
 element* GetE         (element** el_now)
@@ -604,7 +724,12 @@ element* GetUnary     (element** el_now)
     parse_ass;
 
     if ((*el_now + 1)->type == PARAM)
-        return GetCall (el_now);
+    {
+        element* el_result = GetCall (el_now);
+        if (!el_result)
+            require_exit;
+        return el_result;
+    }
 
     return GetP (el_now);
 }
@@ -643,38 +768,3 @@ element* GetP         (element** el_now)
 
     return el_result;
 }
-
-/*
-Old and uselessful code:
-
-element* InsertHead   (Tree* tree, Types type, double num, char symb)
-{
-    assert (tree);
-    assert (tree->head == nullptr);
-
-    create_el;
-    tree->head = el_crt;
-
-    return el_crt;
-}
-
-element* InsertLeft  (element* el, Types type, double num, char symb)
-{
-    assert (el->left);
-
-    create_el;
-    el->left = el_crt;
-
-    return el_crt;
-}
-
-element* InsertRight (element* el, Types type, double num, char symb)
-{
-    assert (el->right);
-
-    create_el;
-    el->right = el_crt;
-
-    return el_crt;
-}
-*/

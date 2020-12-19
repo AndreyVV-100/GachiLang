@@ -7,18 +7,17 @@ int main ()
     SetConsoleOutputCP (65001);
 
     Tree tree = {};
-    LexicalAnalyze (&tree, "../Examples/pr2.txt");
+    LexicalAnalyze (&tree, "../Examples/pr1.txt");
 
-    if (LexicalParse (&tree))
-        printf ("LexicalParse error.\n");
+    LexicalParse (&tree);
     CreateGraph  (&tree); 
 
-    /*
+    
     element* elems = tree.stk.buffer;
 
     for (int i_elem = 0; i_elem < 100; i_elem++)
         printf ("Type: %d - %s\n", elems[i_elem].type, (elems[i_elem].ind) ? elems[i_elem].ind : "");
-    */
+    
 
     TreeDestructor (&tree);
 

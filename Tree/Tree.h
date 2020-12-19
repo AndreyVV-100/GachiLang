@@ -14,9 +14,27 @@
                           break;                                                                 \
                           }
 
-#define lex_ass assert (tree);  \
-                assert (code);  \
-                assert (*code)
+#define anal_ass assert (tree);  \
+                 assert (code);  \
+                 assert (*code)
+
+#define parse_ass assert (el_now); \
+                  assert (*el_now)
+
+#define check_parse(el) if (el == PARSE_ERR) return PARSE_ERR
+
+#define require_exit  {                                                                              \
+                          printf ("Require error in function %s, line %d\n", __FUNCSIG__, __LINE__); \
+                          return PARSE_ERR;                                                          \
+                      }
+
+#define require(what) if ((*el_now)->type != what) \
+                          require_exit;
+
+#define require_ind   if ((*el_now)->type != IND || (*el_now)->ind == nullptr) \
+                          require_exit;
+
+#define next *el_now += 1
 
 enum Types
 {
@@ -28,10 +46,11 @@ enum Types
     BODY  = 5,
     ARITH = 6,
     NUM   = 7,
-    VAR   = 8
+    VAR   = 8,
+    IND   = 9
 };
 
-enum LexType
+enum LexResult
 {
     NOT_THIS = 0,
     SUCCESS  = 1,
@@ -94,27 +113,55 @@ void ElementGraph (FILE* graph, element* el);
 
 bool LexicalAnalyze (Tree* tree, const char* file_path);
 
+bool LexicalParse (Tree* tree);
+
 int CountSize (FILE* file);
 
 size_t ReadTxt (char** text, const char* file_name);
 
 void  SkipSpaces (char** eq, size_t* line_now);
 
-bool GetElement (Tree* tree, char** code);
+bool CheckElement (Tree* tree, char** code);
 
-LexType CheckLR    (Tree* tree, char** code);
+LexResult CheckLR    (Tree* tree, char** code);
 
-LexType CheckBody  (Tree* tree, char** code);
+LexResult CheckBody  (Tree* tree, char** code);
 
-LexType CheckParam (Tree* tree, char** code);
+LexResult CheckParam (Tree* tree, char** code);
 
-LexType CheckArith (Tree* tree, char** code);
+LexResult CheckArith (Tree* tree, char** code);
 
-LexType CheckInd   (Tree* tree, char** code);
+LexResult CheckInd   (Tree* tree, char** code);
 
-LexType CheckNum   (Tree* tree, char** code);
+LexResult CheckNum   (Tree* tree, char** code);
 
 bool IsMale (const char* code);
+
+element* GetFunc      (element** el_now);
+
+element* GetFuncParam (element** el_now);
+
+element* GetBody      (element** el_now);
+
+element* GetOper      (element** el_now);
+
+element* GetArith     (element** el_now);
+
+element* GetCall      (element** el_now);
+
+element* GetReturn    (element** el_now);
+
+element* GetCond      (element** el_now);
+
+element* GetE         (element** el_now);
+
+element* GetT         (element** el_now);
+
+element* GetDegree    (element** el_now);
+
+element* GetUnary     (element** el_now);
+
+element* GetP         (element** el_now);
 
 /*
 Old code:

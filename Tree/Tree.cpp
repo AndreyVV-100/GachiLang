@@ -10,6 +10,8 @@
 // Тип перечисления не входит в область. Старайтесь использовать "enum class" вместо "enum".
 #pragma warning (disable : 26812)
 
+element* PARSE_ERR = (element*)1;
+
 void TreeConstructor (Tree* tree)
 {
     assert (tree);
@@ -98,7 +100,7 @@ void ElementGraph (FILE* graph, element* el)
     assert (graph);
     assert (el);
 
-    if (el->left)
+    if (el->left > PARSE_ERR)
     {
         fprintf (graph, "\"Point: %p\\n Type: %d\\n %s\" -> "
                         "\"Point: %p\\n Type: %d\\n %s\";\n",
@@ -108,7 +110,7 @@ void ElementGraph (FILE* graph, element* el)
         ElementGraph (graph, el->left);
     }
 
-    if (el->right)
+    if (el->right > PARSE_ERR)
     {
         fprintf (graph, "\"Point: %p\\n Type: %d\\n %s\" -> "
                         "\"Point: %p\\n Type: %d\\n %s\";\n",
@@ -143,7 +145,7 @@ bool LexicalAnalyze (Tree* tree, const char* file_path)
             return 1;
         }
 
-        if (GetElement (tree, &code_now))
+        if (CheckElement (tree, &code_now))
         {
             printf ("Error in line %u\n", line_now);
             TreeDestructor (tree);
@@ -154,6 +156,43 @@ bool LexicalAnalyze (Tree* tree, const char* file_path)
     }
 
     free (code);
+    return 0;
+}
+
+bool LexicalParse (Tree* tree)
+{
+    assert (tree);
+
+    element* el_now  = tree->stk.buffer;
+    const char dec_str[] = "DICK";
+    char* fix_constructor = (char*) dec_str;
+
+    ElementConstructor (tree, DEC, (char**) &fix_constructor, 4);
+    fix_constructor -= 4;
+
+    element* dec_now = tree->stk.buffer + tree->stk.size - 1;
+    tree->head = dec_now;
+
+    // ToDo: Think about going out of bounds.
+
+    do
+    {
+        ElementConstructor (tree, DEC, &fix_constructor, 4);
+        fix_constructor -= 4;
+
+        dec_now->right = tree->stk.buffer + tree->stk.size - 1;
+        dec_now = dec_now->right;
+
+        dec_now->left = GetFunc (&el_now);
+        if (dec_now->left == PARSE_ERR)
+        {
+            //TreeDestructor (tree);
+            return 1;
+        }
+    }
+    while (el_now->type != DEC && tree->stk.size < tree->stk.capacity);
+    
+    tree->head = tree->head->right;
     return 0;
 }
 
@@ -211,24 +250,24 @@ void  SkipSpaces (char** code, size_t* line_now)
     return;
 }
 
-bool GetElement (Tree* tree, char** code)
+bool CheckElement (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     int lex_check = 0;
 
-    #define TryGet(func) lex_check = func (tree, code); \
-                         if (lex_check)                 \
-                            return lex_check - 1;
+    #define TryCheck(func) lex_check = func (tree, code); \
+                           if (lex_check)                 \
+                              return lex_check - 1;
 
-    TryGet (CheckLR);
-    TryGet (CheckBody);
-    TryGet (CheckParam);
-    TryGet (CheckArith);
-    TryGet (CheckInd);
-    TryGet (CheckNum);
+    TryCheck (CheckLR);
+    TryCheck (CheckBody);
+    TryCheck (CheckParam);
+    TryCheck (CheckArith);
+    TryCheck (CheckInd);
+    TryCheck (CheckNum);
 
-    #undef TryGet
+    #undef TryCheck
     return 1;
 }
 
@@ -240,9 +279,9 @@ bool IsMale (const char* code)
     return (check[0] == 226 && check[1] == 153 && check[2] == 130);
 }
 
-LexType CheckLR    (Tree* tree, char** code)
+LexResult CheckLR    (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     if (**code == '$')
     {
@@ -253,9 +292,9 @@ LexType CheckLR    (Tree* tree, char** code)
     return NOT_THIS;
 }
 
-LexType CheckBody  (Tree* tree, char** code)
+LexResult CheckBody  (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     if (strncmp ("AAAAH", *code, 5) == 0)
     {
@@ -266,9 +305,9 @@ LexType CheckBody  (Tree* tree, char** code)
     return NOT_THIS;
 }
 
-LexType CheckParam (Tree* tree, char** code)
+LexResult CheckParam (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     if (strncmp ("ass", *code, 3) == 0)
     {
@@ -279,9 +318,9 @@ LexType CheckParam (Tree* tree, char** code)
     return NOT_THIS;
 }
 
-LexType CheckArith (Tree* tree, char** code)
+LexResult CheckArith (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     switch (**code)
     {
@@ -290,6 +329,8 @@ LexType CheckArith (Tree* tree, char** code)
         case '*':
         case '/':
         case '^':
+        case '(':
+        case ')':
             ElementConstructor (tree, ARITH, code, 1);
             return SUCCESS;
 
@@ -314,9 +355,9 @@ LexType CheckArith (Tree* tree, char** code)
     return NOT_THIS;
 }
 
-LexType CheckInd   (Tree* tree, char** code)
+LexResult CheckInd   (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     if (IsMale (*code))
     {
@@ -329,16 +370,16 @@ LexType CheckInd   (Tree* tree, char** code)
             return ERROR;
 
         len += 3;
-        ElementConstructor (tree, NIL, code, len);
+        ElementConstructor (tree, IND, code, len);
         return SUCCESS;
     }
 
     return NOT_THIS;
 }
 
-LexType CheckNum   (Tree* tree, char** code)
+LexResult CheckNum   (Tree* tree, char** code)
 {
-    lex_ass;
+    anal_ass;
 
     size_t num_len = 0;
 
@@ -359,6 +400,248 @@ LexType CheckNum   (Tree* tree, char** code)
     }
 
     return NOT_THIS;
+}
+
+element* GetFunc      (element** el_now)
+{
+    parse_ass;
+
+    require_ind;
+
+    element* el_result = *el_now;
+    next;
+
+    el_result->left = GetFuncParam (el_now);
+    check_parse (el_result->left);
+
+    el_result->right = GetBody (el_now);
+    check_parse (el_result->right);
+
+    el_result->type = FUNC;
+    require (BODY);
+    next;
+    return el_result;
+}
+
+element* GetFuncParam (element** el_now)
+{
+    parse_ass;
+
+    require (PARAM);
+    next;
+
+    if ((*el_now)->type == PARAM)
+    {
+        next;
+        return nullptr;
+    }
+
+    require_ind;
+    element* el_result = *el_now;
+    next;
+
+    while ((*el_now)->type != PARAM)
+    {
+        require (IND);
+
+        ((*el_now) - 1)->left = *el_now;
+        next;
+    }
+    
+    return el_result;
+}
+
+element* GetBody      (element** el_now)
+{
+    parse_ass;
+
+    if ((*el_now)->type != BODY)
+        return GetOper (el_now);
+    next;
+    
+    if ((*el_now)->type == BODY)
+    {
+        next;
+        return nullptr;
+    }
+
+    element* el_result = GetOper (el_now);
+    check_parse (el_result);
+    element* go_LR     = el_result;
+
+    while ((*el_now)->type != BODY)
+    {
+        go_LR->right = GetOper (el_now);
+        go_LR = go_LR->right;
+        check_parse (go_LR);
+    }
+
+    return el_result;
+}
+
+element* GetOper      (element** el_now)
+{
+    parse_ass;
+    require_ind;
+
+    element* el_result = nullptr;
+
+    #define TryGet(func) el_result = func (el_now);         \
+                         if (el_result)                     \
+                         {                                  \
+                             check_parse (el_result);       \
+                             require (LR);                  \
+                             (*el_now)->left = el_result;   \
+                             el_result = *el_now;           \
+                             next;                          \
+                             return el_result;              \
+                         }
+
+    TryGet (GetArith);
+    TryGet (GetCall);
+    TryGet (GetReturn);
+    TryGet (GetCond);
+
+    #undef TryGet
+    require_exit;
+}
+
+element* GetArith     (element** el_now)
+{
+    parse_ass;
+
+    if ((*el_now)->type != IND || (*el_now + 1)->type != ARITH)
+        return nullptr;
+
+    if (strcmp ("=", (*el_now + 1)->ind))
+        require_exit;
+
+    element* el_result = *el_now + 1;
+    el_result->left    = *el_now;
+    (*el_now)->type    = VAR;
+    next; next;
+    el_result->right   = GetE (el_now);
+
+    check_parse (el_result->right);
+    return el_result;
+}
+
+element* GetCall      (element** el_now)
+{
+    return nullptr;
+}
+
+element* GetReturn    (element** el_now)
+{
+    return nullptr;
+}
+
+element* GetCond      (element** el_now)
+{
+    return nullptr;
+}
+
+element* GetE         (element** el_now)
+{
+    parse_ass;
+
+    element* el_result = GetT (el_now);
+
+    while ((*el_now)->type == ARITH           && 
+          (strcmp ("+", (*el_now)->ind) == 0  ||
+           strcmp ("-", (*el_now)->ind) == 0))
+    {
+        (*el_now)->left = el_result;
+        el_result = *el_now;
+        next;
+        el_result->right = GetT (el_now);
+        check_parse (el_result->right);
+    }
+
+    return el_result;
+}
+
+element* GetT         (element** el_now)
+{
+    parse_ass;
+
+    element* el_result = GetDegree (el_now);
+
+    while ((*el_now)->type == ARITH &&
+          (strcmp ("*", (*el_now)->ind) == 0 ||
+           strcmp ("/", (*el_now)->ind) == 0))
+    {
+        (*el_now)->left = el_result;
+        el_result = *el_now;
+        next;
+        el_result->right = GetDegree (el_now);
+        check_parse (el_result->right);
+    }
+
+    return el_result;
+}
+
+element* GetDegree    (element** el_now)
+{
+    parse_ass;
+
+    element* el_result = GetUnary (el_now);
+
+    if ((*el_now)->type == ARITH && strcmp ("^", (*el_now)->ind) == 0)
+    {
+        (*el_now)->left = el_result;
+        el_result = *el_now;
+        next;
+        el_result->right = GetDegree (el_now);
+        check_parse (el_result->right);
+    }
+
+    return el_result;
+}
+
+element* GetUnary     (element** el_now)
+{
+    parse_ass;
+
+    if ((*el_now + 1)->type == PARAM)
+        return GetCall (el_now);
+
+    return GetP (el_now);
+}
+
+element* GetP         (element** el_now)
+{
+    parse_ass;
+
+    element* el_result = PARSE_ERR;
+
+    switch ((*el_now)->type)
+    {
+        case ARITH:
+            if (strcmp ("(", (*el_now)->ind))
+                require_exit;
+
+            next;
+            el_result = GetE (el_now);
+
+            if (strcmp (")", (*el_now)->ind))
+                require_exit;
+            next;
+            break;
+
+        case IND:
+            el_result = *el_now;
+            next;
+            el_result->type = VAR;
+            break;
+
+        case NUM:
+            el_result = *el_now;
+            next;
+            break;
+    }
+
+    return el_result;
 }
 
 /*

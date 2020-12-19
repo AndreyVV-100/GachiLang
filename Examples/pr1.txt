@@ -3,7 +3,7 @@ AAAAH
 	♂bucks♂   = 300$
 	♂fisting♂ = 300$
 	
-	♂fantasies♂ ass ♂bucks♂ == ♂fisting♂ ass
+	♂fantasies♂ ♂bucks♂ == ♂fisting♂
 	AAAAH
 		♂bucks♂ = 0$
 		♂fisting♂ ass ♂bucks♂ 300 ass$
@@ -15,7 +15,7 @@ AAAAH
 ♂fisting♂ ass ♂cock♂ ♂finger♂ ass
 AAAAH
 
-	♂let's go♂ ass ♂cock♂ != ♂finger♂ ass
+	♂let's go♂ ♂cock♂ != ♂finger♂
 	AAAAH
 		♂cumming♂ ass ♂cock♂ ass$
 		♂cock♂ = ♂cock♂ + 1$

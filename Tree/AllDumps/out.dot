@@ -1,0 +1,7 @@
+digraph G{
+rankdir = HR;
+ node[shape=box];
+"Point: 016DA01C\n Type: 3\n =";
+"Point: 016DA01C\n Type: 3\n =" -> "Point: 016DA030\n Type: 6\n x";
+"Point: 016DA01C\n Type: 3\n =" -> "Point: 016DA044\n Type: 5\n 1";
+}

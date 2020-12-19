@@ -1,25 +1,25 @@
-♂sex♂ "":
+♂sex♂ ass ass
 AAAAH
 	♂bucks♂   = 300$
 	♂fisting♂ = 300$
 	
-	♂fantasies♂ "♂bucks♂ == ♂fisting♂":
+	♂fantasies♂ ass ♂bucks♂ == ♂fisting♂ ass
 	AAAAH
 		♂bucks♂ = 0$
-		♂fisting♂ (♂bucks♂, 300)$
-	YEAAH
+		♂fisting♂ ass ♂bucks♂ 300 ass$
+	AAAAH
 	
 	♂next door♂ 0$
-YEAAH
-
-♂fisting♂ "♂cock♂, ♂finger♂:
 AAAAH
 
-	♂let's go♂ "♂cock♂ != ♂finger♂":
+♂fisting♂ ass ♂cock♂ ♂finger♂ ass
+AAAAH
+
+	♂let's go♂ ass ♂cock♂ != ♂finger♂ ass
 	AAAAH
-		♂suck♂ "♂cock♂"$
+		♂cumming♂ ass ♂cock♂ ass$
 		♂cock♂ = ♂cock♂ + 1$
-	YEAAH
+	AAAAH
 	
-	♂next door♂ cock$
-YEAAH
+	♂next door♂ ♂cock♂$
+AAAAH

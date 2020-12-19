@@ -14,15 +14,28 @@
                           break;                                                                 \
                           }
 
+#define lex_ass assert (tree);  \
+                assert (code);  \
+                assert (*code)
+
 enum Types
 {
     NIL   = 0,
     DEC   = 1,
     FUNC  = 2,
-    OPER  = 3,
-    ARITH = 4,
-    NUM   = 5,
-    VAR   = 6
+    LR    = 3,
+    PARAM = 4,
+    BODY  = 5,
+    ARITH = 6,
+    NUM   = 7,
+    VAR   = 8
+};
+
+enum LexType
+{
+    NOT_THIS = 0,
+    SUCCESS  = 1,
+    ERROR    = 2
 };
 
 struct element
@@ -71,7 +84,7 @@ void TreeConstructor (Tree* tree);
 
 void TreeDestructor (Tree* tree);
 
-bool ElementConstructor (Tree* tree, Types type, char* ind, size_t num);
+bool ElementConstructor (Tree* tree, Types type, char** ind, size_t len);
 
 void ElementDestructor (element* el);
 
@@ -79,7 +92,29 @@ void CreateGraph (Tree* tree);
 
 void ElementGraph (FILE* graph, element* el);
 
-const char* TypeCheck (Types type);
+bool LexicalAnalyze (Tree* tree, const char* file_path);
+
+int CountSize (FILE* file);
+
+size_t ReadTxt (char** text, const char* file_name);
+
+void  SkipSpaces (char** eq, size_t* line_now);
+
+bool GetElement (Tree* tree, char** code);
+
+LexType CheckLR    (Tree* tree, char** code);
+
+LexType CheckBody  (Tree* tree, char** code);
+
+LexType CheckParam (Tree* tree, char** code);
+
+LexType CheckArith (Tree* tree, char** code);
+
+LexType CheckInd   (Tree* tree, char** code);
+
+LexType CheckNum   (Tree* tree, char** code);
+
+bool IsMale (const char* code);
 
 /*
 Old code:

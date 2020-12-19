@@ -50,7 +50,7 @@ void StackDestructor (Stack* stk)
 	stk->buffer = ERR_FREE;
 	stk->size = 0;
 	stk->capacity = 0;
-	stk->status_error = NOT_CREATED;
+	stk->status_error = STK_DEL;
 	stk->buf_hash = 0;
 	stk->stk_hash = 0;
 
@@ -211,6 +211,10 @@ int StackError (Stack* stk)
 	if (stk->status_error != 0)
 		return stk->status_error;
 
+	// Warning^ It's isn't standart stack mode.
+	// This return is used for agree to use all data.
+	return STK_GOOD;
+
 	unsigned long long hash1 = stk->stk_hash;
 	unsigned long long hash2 = stk->buf_hash;
 	RecountHash (stk);
@@ -221,7 +225,7 @@ int StackError (Stack* stk)
 	if (stk->buf_hash != hash2)
 		return stk->status_error = ERR_HASH_BUF;
 	
-	return 0;
+	return STK_GOOD;
 }
 
 void StackLog(Stack* stk)
@@ -352,8 +356,6 @@ unsigned long long CountHash (char* buffer, size_t num)
 
 void RecountHash (Stack* stk)
 {
-	return; // Warning: using for work with all elements. Isn't main stack mode.
-	
 	assert (stk);
 	
 	stk->stk_hash = 0;

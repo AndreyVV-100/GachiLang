@@ -98,9 +98,12 @@ void StackPush (Stack* stk, stk_type elem)
 	}
 
 	strncpy (new_ind, elem.ind, elem.len + 1);
+
+	char* elem_ind_save = elem.ind;
 	elem.ind = new_ind;
 
 	*(stk->buffer + (stk->size)++) = elem;
+	elem.ind = elem_ind_save;
 
 	RecountHash (stk);
 

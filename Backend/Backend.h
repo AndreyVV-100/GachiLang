@@ -7,6 +7,7 @@
 #define TryPrint(func, way) if (func (asm_text, el->way, vars)) \
                             {                                   \
                                 printf ("Print error in function %s, line %d\n", __FUNCSIG__, __LINE__); \
+                                printf ("It was on point %p in element: %s\n", el, el->ind);             \
                                 return 1;                       \
                             }
 

@@ -16,7 +16,7 @@ void TreeConstructor (Tree* tree)
 {
     assert (tree);
 
-    const size_t stk_size = 100;
+    const size_t stk_size = 1000;
     tree->head = nullptr;
     StackConstructor (&(tree->stk), stk_size);
     return;
@@ -450,6 +450,7 @@ element* GetFuncParam (element** el_now)
 
     require_ind;
     element* el_result = *el_now;
+    el_result->type    = PARAM;
     next;
 
     while ((*el_now)->type != PARAM)
@@ -630,14 +631,14 @@ element* GetCond      (element** el_now)
     const size_t while_size  = sizeof (while_str) + 5; // With attention to male symbol
 
     if ((*el_now)->len != if_size && (*el_now)->len != while_size) // +3 and -6 - skip male symbol
-        return nullptr;
+        require_exit;
 
     if (strncmp (if_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
         (*el_now)->type = IF;
     else if (strncmp (while_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
         (*el_now)->type = WHILE;
     else
-        return nullptr;
+        require_exit;
 
     element* el_result = *el_now;
     next;

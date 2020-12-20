@@ -1,0 +1,61 @@
+♂sex♂ ass ass
+AAAAH
+	♂Aaaah♂ = ♂swallow♂ ass ass$
+	♂Baaah♂ = ♂swallow♂ ass ass$
+	♂Caaah♂ = ♂swallow♂ ass ass$
+	
+	♂SqrtFisting♂ ass ♂Aaaah♂ ♂Baaah♂ ♂Caaah♂ ass$
+	♂next door♂ 0$
+AAAAH
+
+♂SqrtFisting♂ ass ♂Aah♂ ♂Bah♂ ♂Cah♂ ass
+AAAAH
+	♂fantasies♂ ♂Aah♂ == 0
+		♂next door♂ ♂LinearFisting♂ ass ♂Bah♂ ♂Cah♂ ass$
+	
+	♂Dick♂ = ♂Bah♂ ^ 2 - 4 * ♂Aah♂ * ♂Cah♂$
+	
+	♂fantasies♂ ♂Dick♂ < 0
+	AAAAH
+		♂cumming♂ ass 0 ass$
+		♂next door♂ 0$
+	AAAAH
+	
+	♂fantasies♂ ♂Dick♂ == 0
+	AAAAH
+		♂cumming♂ ass 1 ass$
+		♂fat cock♂ = (0 - 1) * ♂Bah♂ / 2 / ♂Aah♂$
+		♂cumming♂ ass ♂fat cock♂ ass$
+		♂next door♂ 1$
+	AAAAH
+	
+	♂Dick♂ = ♂Dick♂ ^ 0.5$
+	♂cumming♂ ass 2 ass$
+	♂fat cock♂ = (0 - ♂Bah♂ - ♂Dick♂) / 2 / ♂Aah♂$
+	♂cumming♂ ass ♂fat cock♂ ass$
+	♂fat cock♂ = (0 - ♂Bah♂ + ♂Dick♂) / 2 / ♂Aah♂$
+	♂cumming♂ ass ♂fat cock♂ ass$
+	
+	♂next door♂ 2$
+AAAAH
+
+♂LinearFisting♂ ass ♂anal♂ ♂boy♂ ass
+AAAAH
+	♂fantasies♂ ♂anal♂ == 0
+	AAAAH
+		♂fantasies♂ ♂boy♂ == 0
+		AAAAH
+			♂fat cock♂ = 0 - 1$
+			♂cumming♂ ass ♂fat cock♂ ass$
+			♂next door♂ ♂fat cock♂$
+		AAAAH
+		♂cumming♂ ass 0 ass$
+		♂next door♂ 0$
+	AAAAH
+	
+	♂cumming♂ ass 1 ass$
+	♂fat cock♂ = (0 - 1) * ♂boy♂ / ♂anal♂$
+	♂cumming♂ ass ♂fat cock♂ ass$
+	
+	♂next door♂ 1$
+AAAAH

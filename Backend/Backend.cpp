@@ -4,8 +4,12 @@ int main ()
 {
     Tree code = {};
 
-    GoTree (&code, "../Examples/pr1.txt");
-    //CreateGraph (&code);
+    if (GoTree (&code, "../Examples/SqrtTripleDick.txt"))
+    {
+        TreeDestructor (&code);
+        return 0;
+    }
+    CreateGraph (&code);
     GoAsm  (&code, "AsmCode/asm.txt");
 
     TreeDestructor (&code);
@@ -144,6 +148,9 @@ bool TakeFuncVars (element* el, Stack* vars)
             return 1;
         }
 
+        if (VarNumber (vars, el->left->ind))
+            return 0;
+
         StackPush (vars, *(el->left));
         return 0;
     }
@@ -194,7 +201,7 @@ size_t VarNumber (Stack* vars, const char* var_name)
         if (strcmp (var_name, vars->buffer[result].ind) == 0)
             return result + 2;
 
-    printf ("Error: No var with name \"%s\".\n", var_name);
+    // printf ("Error: No var with name \"%s\".\n", var_name);
     return 0;
 }
 
@@ -320,7 +327,7 @@ bool PrintCall  (FILE* asm_text, element* el, Stack* vars)
     }
 
     // WARNING: PLACE OF BEATIFIC CODE, NO COPIPASTE!!!
-    // Why +3 and +5 - see in GetReturn and GetCond
+    // Why +3 and +6 - see in GetReturn and GetCond
     
     static const char   sin_str[] = "semen";
     static const char   cos_str[] = "cum";
@@ -377,23 +384,28 @@ bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
     print_ass;
 
     static size_t cond_number = 0;
+    size_t cond_now = cond_number;
 
     if (el->type != IF && el->type != WHILE)
         return 1;
 
     if (el->type == WHILE)
-        fprintf (asm_text, "while_no%d:\n", cond_number);
+        fprintf (asm_text, "while_no%d:\n", cond_now);
 
-    if (PrintComp (asm_text, el->left, vars, cond_number))
+    if (PrintComp (asm_text, el->left, vars, cond_now))
         return 1;
-    
+
+    cond_number++;
+
     if (el->right)
         TryPrint (PrintLR, right);
 
-    if (el->type == WHILE)
-        fprintf (asm_text, "jmp :while_no%d\n", cond_number);
+    cond_number--;
 
-    fprintf (asm_text, "cond_no%d:\n", cond_number);
+    if (el->type == WHILE)
+        fprintf (asm_text, "jmp :while_no%d\n", cond_now);
+
+    fprintf (asm_text, "cond_no%d:\n", cond_now);
     cond_number++;
     return 0;
 }

@@ -1,0 +1,23 @@
+♂sex♂ ass ass
+AAAAH
+	♂cum♂ = 1$
+	
+	♂let's go♂ ♂cum♂ <= 10
+	AAAAH
+		♂Van♂ = ♂FUCKtorial♂ ass ♂cum♂ ass$
+		♂cumming♂ ass ♂Van♂ ass$
+		♂cum♂ = ♂cum♂ + 1$
+	AAAAH
+	
+	♂next door♂ 0$
+AAAAH
+
+♂FUCKtorial♂ ass ♂cum♂ ass
+AAAAH
+	♂fantasies♂ ♂cum♂ <= 1
+		♂next door♂ 1$
+		
+	♂Billy♂ = ♂cum♂ - 1$
+	♂Billy♂ = ♂FUCKtorial♂ ass ♂Billy♂ ass$
+	♂next door♂ ♂Billy♂ * ♂cum♂$
+AAAAH

@@ -1,0 +1,54 @@
+
+Mon Dec 21 01:56:48 2020
+Stack [STK_GOOD] : Nice!
+size = 2
+capacity = 32
+min_capacity = 32
+buffer:
+
+End of log.
+
+Mon Dec 21 01:56:48 2020
+Stack [STK_GOOD] : Nice!
+size = 1
+capacity = 32
+min_capacity = 32
+buffer:
+
+End of log.
+
+Mon Dec 21 03:11:11 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:12:05 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:13:35 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:16:37 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:21:38 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:23:27 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:25:39 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:26:33 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.
+
+Mon Dec 21 03:28:39 2020
+Stack [STK_DEL] : The stack was deleted.
+End of log.

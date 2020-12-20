@@ -23,6 +23,7 @@
 
 #define require_exit  {                                                                              \
                           printf ("Require error in function %s, line %d\n", __FUNCSIG__, __LINE__); \
+                          printf ("It was in lexeme: %s\n", (*el_now)->ind);                         \
                           return PARSE_ERR;                                                          \
                       }
 

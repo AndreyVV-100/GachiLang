@@ -123,6 +123,20 @@ void ElementGraph (FILE* graph, element* el)
     return;
 }
 
+bool GoTree (Tree* tree, const char* file_path)
+{
+    assert (tree);
+    assert (file_path);
+    
+    if (LexicalAnalyze (tree, file_path))
+        return 1;
+
+    if (LexicalParse (tree))
+        return 1;
+
+    return 0;
+}
+
 bool LexicalAnalyze (Tree* tree, const char* file_path)
 {
     assert (tree);
@@ -186,7 +200,7 @@ bool LexicalParse (Tree* tree)
         dec_now->left = GetFunc (&el_now);
         if (dec_now->left == PARSE_ERR)
         {
-            //TreeDestructor (tree);
+            TreeDestructor (tree);
             return 1;
         }
     }

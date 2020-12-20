@@ -8,10 +8,6 @@
 
 #pragma once
 
-#include <assert.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <time.h>
 #include "Tree.h"
 

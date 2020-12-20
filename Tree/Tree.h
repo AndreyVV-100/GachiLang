@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <assert.h>
 #include <string.h>
-#include <math.h>
 
 #pragma warning (disable : 4996)
 
@@ -112,6 +110,8 @@ void ElementDestructor (element* el);
 void CreateGraph (Tree* tree);
 
 void ElementGraph (FILE* graph, element* el);
+
+bool GoTree (Tree* tree, const char* file_path);
 
 bool LexicalAnalyze (Tree* tree, const char* file_path);
 

@@ -7,11 +7,9 @@ int main ()
     SetConsoleOutputCP (65001);
 
     Tree tree = {};
-    LexicalAnalyze (&tree, "../Examples/pr1.txt");
+    GoTree (&tree, "../Examples/pr1.txt");
 
-    LexicalParse (&tree);
     CreateGraph  (&tree); 
-
     
     element* elems = tree.stk.buffer;
 

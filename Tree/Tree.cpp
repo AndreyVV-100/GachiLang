@@ -533,7 +533,10 @@ element* GetArith     (element** el_now)
 
     element* el_result = *el_now + 1;
     el_result->left    = *el_now;
-    (*el_now)->type    = VAR;
+
+    (*el_now)->type = VAR;
+    el_result->type = EQUAL;
+
     next; next;
     el_result->right   = GetE (el_now);
 
@@ -554,7 +557,7 @@ element* GetCall      (element** el_now)
 
     el_result->left = GetCallParam (el_now);
     check_parse (el_result->left);
-    el_result->type = FUNC;
+    el_result->type = CALL;
     return el_result;
 }
 
@@ -629,7 +632,11 @@ element* GetCond      (element** el_now)
     if ((*el_now)->len != if_size && (*el_now)->len != while_size) // +3 and -6 - skip male symbol
         return nullptr;
 
-    if (strncmp (if_str, (*el_now)->ind + 3, (*el_now)->len - 6) && strncmp (while_str, (*el_now)->ind + 3, (*el_now)->len - 6))
+    if (strncmp (if_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
+        (*el_now)->type = IF;
+    else if (strncmp (while_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
+        (*el_now)->type = WHILE;
+    else
         return nullptr;
 
     element* el_result = *el_now;
@@ -644,8 +651,9 @@ element* GetCond      (element** el_now)
       *((*el_now)->ind) != '<')
             require_exit;
             
-    (*el_now)->left = el_result->left;
-    el_result->left = *el_now;
+    (*el_now)->left       = el_result->left;
+    el_result->left       = *el_now;
+    el_result->left->type = COND;
     next;
 
     el_result->left->right = GetE (el_now);
@@ -653,7 +661,6 @@ element* GetCond      (element** el_now)
 
     el_result->right = GetBody (el_now);
     check_parse (el_result->right);
-    el_result->type = COND;
     
     // Gypsy focuses
     if ((*el_now - 1)->type == LR)

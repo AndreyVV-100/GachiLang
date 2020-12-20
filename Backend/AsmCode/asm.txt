@@ -1,0 +1,73 @@
+push 0
+pop rax
+push 0
+pop [rax]
+push 2
+pop [rax + 1]
+call :♂sex♂
+hlt
+
+♂sex♂:
+
+push rax
+push [rax + 1]
+add
+pop rbx
+push rax
+pop [rbx]
+push rbx
+pop  rax
+
+push 5
+pop [rax + 1]
+push 300
+pop [rax + 2]
+push 300
+pop [rax + 3]
+push [rax + 2]
+push [rax + 3]
+jne :cond_no0
+push 0
+pop [rax + 2]
+push [rax + 2]
+push 300
+call :♂fisting♂
+cond_no0:
+push 0
+
+push [rax]
+pop rax
+ret
+
+♂fisting♂:
+
+push rax
+push [rax + 1]
+add
+pop rbx
+push rax
+pop [rbx]
+push rbx
+pop  rax
+
+push 4
+pop [rax + 1]
+pop [rax + 2]
+pop [rax + 3]
+while_no1:
+push [rax + 3]
+push [rax + 2]
+je :cond_no1
+push [rax + 3]
+out
+push [rax + 3]
+push 1
+add
+pop [rax + 3]
+jmp :while_no1
+cond_no1:
+push [rax + 3]
+
+push [rax]
+pop rax
+ret

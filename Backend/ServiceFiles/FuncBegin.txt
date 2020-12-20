@@ -1,0 +1,9 @@
+
+push rax
+push [rax + 1]
+add
+pop rbx
+push rax
+pop [rbx]
+push rbx
+pop  rax

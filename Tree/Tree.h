@@ -47,7 +47,11 @@ enum Types
     VAR   = 8,
     IND   = 9,
     RET   = 10,
-    COND  = 11
+    IF    = 11,
+    WHILE = 12,
+    CALL  = 13,
+    EQUAL = 14,
+    COND  = 15
 };
 
 enum LexResult

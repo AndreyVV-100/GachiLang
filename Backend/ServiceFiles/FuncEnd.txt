@@ -1,0 +1,4 @@
+
+push [rax]
+pop rax
+ret

@@ -74,11 +74,31 @@ void StackPush (Stack* stk, stk_type elem)
 {
 	ASSERT_OK
 
+	/*
 	if (stk->size == stk->capacity)
 		StackResizeUp (stk);
 
 	if (stk->status_error == DO_MEM_ERR)
 		return;
+	*/
+
+	if (stk->size == stk->capacity)
+	{
+		stk->status_error = DO_MEM_ERR;
+		StackLog (stk);
+		return;
+	}
+
+	char* new_ind = (char*) calloc (elem.len + 1, sizeof (char));
+	if (!new_ind)
+	{
+		stk->status_error = DO_MEM_ERR;
+		StackLog (stk);
+		return;
+	}
+
+	strncpy (new_ind, elem.ind, elem.len + 1);
+	elem.ind = new_ind;
 
 	*(stk->buffer + (stk->size)++) = elem;
 

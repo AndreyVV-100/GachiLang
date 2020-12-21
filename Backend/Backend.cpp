@@ -9,7 +9,7 @@ int main ()
         TreeDestructor (&code);
         return 0;
     }
-    CreateGraph (&code);
+    // CreateGraph (&code);
     GoAsm  (&code, "AsmCode/asm.txt");
 
     TreeDestructor (&code);
@@ -326,38 +326,32 @@ bool PrintCall  (FILE* asm_text, element* el, Stack* vars)
         param = param->left;
     }
 
-    // WARNING: PLACE OF BEATIFIC CODE, NO COPIPASTE!!!
-    // Why +3 and +6 - see in GetReturn and GetCond
+    const size_t without_backslash_0 = 1;
     
-    static const char   sin_str[] = "semen";
-    static const char   cos_str[] = "cum";
-    static const char print_str[] = "cumming";
-    static const char  scan_str[] = "swallow";
+    static const size_t   sin_size = sizeof   (SIN_STR) - without_backslash_0;
+    static const size_t   cos_size = sizeof   (COS_STR) - without_backslash_0;
+    static const size_t print_size = sizeof (PRINT_STR) - without_backslash_0;
+    static const size_t  scan_size = sizeof  (SCAN_STR) - without_backslash_0;
 
-    static const size_t   sin_size = sizeof   (sin_str) - 1;
-    static const size_t   cos_size = sizeof   (cos_str) - 1;
-    static const size_t print_size = sizeof (print_str) - 1;
-    static const size_t  scan_size = sizeof  (scan_str) - 1;
-
-    if (sin_size + 6 == el->len && strncmp (sin_str, el->ind + 3, sin_size) == 0)
+    if (sin_size + 2 * MALE_LEN == el->len && strncmp (SIN_STR, el->ind + MALE_LEN, sin_size) == 0)
     {
         fprintf (asm_text, "sin\n");
         return 0;
     }
 
-    if (cos_size + 6 == el->len && strncmp (cos_str, el->ind + 3, cos_size) == 0)
+    if (cos_size + 2 * MALE_LEN == el->len && strncmp (COS_STR, el->ind + MALE_LEN, cos_size) == 0)
     {
         fprintf (asm_text, "cos\n");
         return 0;
     }
 
-    if (print_size + 6 == el->len && strncmp (print_str, el->ind + 3, print_size) == 0)
+    if (print_size + 2 * MALE_LEN == el->len && strncmp (PRINT_STR, el->ind + MALE_LEN, print_size) == 0)
     {
         fprintf (asm_text, "out\n");
         return 0;
     }
 
-    if (scan_size + 6 == el->len && strncmp (scan_str, el->ind + 3, scan_size) == 0)
+    if (scan_size + 2 * MALE_LEN == el->len && strncmp (SCAN_STR, el->ind + MALE_LEN, scan_size) == 0)
     {
         fprintf (asm_text, "in\n");
         return 0;
@@ -385,6 +379,7 @@ bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
 
     static size_t cond_number = 0;
     size_t cond_now = cond_number;
+    cond_number++;
 
     if (el->type != IF && el->type != WHILE)
         return 1;
@@ -395,18 +390,13 @@ bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
     if (PrintComp (asm_text, el->left, vars, cond_now))
         return 1;
 
-    cond_number++;
-
     if (el->right)
         TryPrint (PrintLR, right);
-
-    cond_number--;
 
     if (el->type == WHILE)
         fprintf (asm_text, "jmp :while_no%d\n", cond_now);
 
     fprintf (asm_text, "cond_no%d:\n", cond_now);
-    cond_number++;
     return 0;
 }
 

@@ -80,6 +80,16 @@ typedef unsigned long long storm;
 
 const storm STORMY_PETREL = 0xBADDED1DE7BB07A1;
 
+const size_t MALE_LEN = 3;
+
+const char    SIN_STR[] = "semen";
+const char    COS_STR[] = "cum";
+const char  PRINT_STR[] = "cumming";
+const char   SCAN_STR[] = "swallow";
+const char     IF_STR[] = "fantasies";
+const char  WHILE_STR[] = "let's go";
+const char RETURN_STR[] = "next door";
+
 //! This is structure of stack.
 
 struct Stack

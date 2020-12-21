@@ -605,10 +605,11 @@ element* GetReturn    (element** el_now)
     parse_ass;
     require_ind;
 
-    const char   return_str[] = "next door";
-    const size_t return_size  = sizeof (return_str) + 5; // With attention to male symbol
+    const size_t without_backslash_0 = 1;
+    const size_t return_size  = sizeof (RETURN_STR) - without_backslash_0;
 
-    if ((*el_now)->len != return_size || strncmp (return_str, (*el_now)->ind + 3, (*el_now)->len - 6)) // +3 and -6 - skip male symbol
+    if ((*el_now)->len != return_size + 2 * MALE_LEN || 
+        strncmp (RETURN_STR, (*el_now)->ind + MALE_LEN, return_size))
         return nullptr;
 
     element* el_result = *el_now;
@@ -625,17 +626,18 @@ element* GetCond      (element** el_now)
     parse_ass;
     require_ind;
 
-    const char   if_str[] = "fantasies";
-    const size_t if_size  = sizeof (if_str) + 5; // With attention to male symbol
-    const char   while_str[] = "let's go";
-    const size_t while_size  = sizeof (while_str) + 5; // With attention to male symbol
+    const size_t without_backslash_0 = 1;
 
-    if ((*el_now)->len != if_size && (*el_now)->len != while_size) // +3 and -6 - skip male symbol
+    const size_t    if_size  = sizeof (IF_STR)    - without_backslash_0;
+    const size_t while_size  = sizeof (WHILE_STR) - without_backslash_0;
+
+    if ((*el_now)->len != if_size    + 2 * MALE_LEN && 
+        (*el_now)->len != while_size + 2 * MALE_LEN) 
         require_exit;
 
-    if (strncmp (if_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
+         if (strncmp (IF_STR,    (*el_now)->ind + MALE_LEN,    if_size) == 0)
         (*el_now)->type = IF;
-    else if (strncmp (while_str, (*el_now)->ind + 3, (*el_now)->len - 6) == 0)
+    else if (strncmp (WHILE_STR, (*el_now)->ind + MALE_LEN, while_size) == 0)
         (*el_now)->type = WHILE;
     else
         require_exit;

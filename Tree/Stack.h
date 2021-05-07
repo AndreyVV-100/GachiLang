@@ -6,13 +6,8 @@
 	@copyright GNU GPL
 */
 
-#pragma once
-
 #include <time.h>
 #include "Tree.h"
-
-#pragma warning (disable : 4996)
-//'fopen': This function or variable may be unsafe.Consider using fopen_s instead.To disable deprecation, use _CRT_SECURE_NO_WARNINGS.
 
 #define ERR_FREE (stk_type*) 228
 #define ASSERT_OK if (StackError (stk)) { StackLog (stk); return;}

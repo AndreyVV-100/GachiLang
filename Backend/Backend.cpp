@@ -1,16 +1,16 @@
 ﻿#include "Backend.h"
 
-int main ()
+int main (int argc, char** argv)
 {
     Tree code = {};
 
-    if (GoTree (&code, "../Examples/SqrtTripleDick.txt"))
+    if (GoTree (&code, (argc > 1) ? argv[1] : "Examples/SqrtTripleDick.txt"))
     {
         TreeDestructor (&code);
         return 0;
     }
     // CreateGraph (&code);
-    GoAsm  (&code, "AsmCode/asm.txt");
+    GoAsm  (&code, "Backend/AsmCode/asm.txt");
 
     TreeDestructor (&code);
     return 0;
@@ -28,7 +28,7 @@ void GoAsm (Tree* code, const char* file_path)
         return;
     }
 
-    if (PrintService (asm_text, "ServiceFiles/AsmBegin.txt"))
+    if (PrintService (asm_text, "Backend/ServiceFiles/AsmBegin.txt"))
     {
         fclose (asm_text);
         return;
@@ -53,6 +53,7 @@ bool PrintService (FILE* asm_text, const char* file_path)
 
     fprintf (asm_text, "%s", asm_begin);
     free (asm_begin);
+    return 0; // ToDo: There was no return!
 }
 
 void DeleteFuncSpaces (element* el)
@@ -165,9 +166,9 @@ bool PrintParam (FILE* asm_text, element* el, Stack* vars)
     assert (asm_text);
     assert (vars);
 
-    if (PrintService (asm_text, "ServiceFiles/FuncBegin.txt"))
+    if (PrintService (asm_text, "Backend/ServiceFiles/FuncBegin.txt"))
         return 1;
-    fprintf (asm_text, "\n""push %d\n"
+    fprintf (asm_text, "\n""push %lu\n"
                            "pop [rax + 1]\n",
              vars->size + 2);
 
@@ -188,7 +189,7 @@ bool SaveParam (FILE* asm_text, element* el, Stack* vars)
     size_t var_num = VarNumber (vars, el->ind);
     if (var_num < 2)
         return 1;
-    fprintf (asm_text, "pop [rax + %u]\n", var_num);
+    fprintf (asm_text, "pop [rax + %lu]\n", var_num);
     return 0;
 }
 
@@ -229,6 +230,8 @@ bool PrintLR    (FILE* asm_text, element* el, Stack* vars)
         case IF:
         case WHILE:
             return PrintCond  (asm_text, el, vars);
+        default:
+            return 1;
     }
 
     return 1;
@@ -246,7 +249,7 @@ bool PrintEqual (FILE* asm_text, element* el, Stack* vars)
     size_t var_num = VarNumber (vars, el->left->ind);
     if (var_num < 2)
         return 1;
-    fprintf (asm_text, "pop [rax + %u]\n", var_num);
+    fprintf (asm_text, "pop [rax + %lu]\n", var_num);
 
     return 0;
 }
@@ -269,7 +272,7 @@ bool PrintArith (FILE* asm_text, element* el, Stack* vars)
         size_t var_num = VarNumber (vars, el->ind);
         if (var_num < 2)
             return 1;
-        fprintf (asm_text, "push [rax + %d]\n", var_num);
+        fprintf (asm_text, "push [rax + %lu]\n", var_num);
         return 0;
     }
 
@@ -317,7 +320,7 @@ bool PrintCall  (FILE* asm_text, element* el, Stack* vars)
             size_t var_num = VarNumber (vars, param->ind);
             if (var_num < 2)
                 return 1;
-            fprintf (asm_text, "push [rax + %d]\n", var_num);
+            fprintf (asm_text, "push [rax + %lu]\n", var_num);
         }
 
         else
@@ -326,6 +329,9 @@ bool PrintCall  (FILE* asm_text, element* el, Stack* vars)
         param = param->left;
     }
 
+    // Old code:
+
+/* 
     const size_t without_backslash_0 = 1;
     
     static const size_t   sin_size = sizeof   (SIN_STR) - without_backslash_0;
@@ -355,6 +361,30 @@ bool PrintCall  (FILE* asm_text, element* el, Stack* vars)
     {
         fprintf (asm_text, "in\n");
         return 0;
+    } */
+
+    if (strcmp (SIN_STR, el->ind) == 0)
+    {
+        fprintf (asm_text, "sin\n");
+        return 0;
+    }
+
+    if (strcmp (COS_STR, el->ind) == 0)
+    {
+        fprintf (asm_text, "cos\n");
+        return 0;
+    }
+
+    if (strcmp (PRINT_STR, el->ind) == 0)
+    {
+        fprintf (asm_text, "out\n");
+        return 0;
+    }
+
+    if (strcmp (SCAN_STR, el->ind) == 0)
+    {
+        fprintf (asm_text, "in\n");
+        return 0;
     }
 
     fprintf (asm_text, "call :%s\n", el->ind);
@@ -370,7 +400,7 @@ bool PrintRet   (FILE* asm_text, element* el, Stack* vars)
 
     TryPrint (PrintArith, left);
 
-    return PrintService (asm_text, "ServiceFiles/FuncEnd.txt");
+    return PrintService (asm_text, "Backend/ServiceFiles/FuncEnd.txt");
 }
 
 bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
@@ -385,7 +415,7 @@ bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
         return 1;
 
     if (el->type == WHILE)
-        fprintf (asm_text, "while_no%d:\n", cond_now);
+        fprintf (asm_text, "while_no%lu:\n", cond_now);
 
     if (PrintComp (asm_text, el->left, vars, cond_now))
         return 1;
@@ -394,9 +424,9 @@ bool PrintCond  (FILE* asm_text, element* el, Stack* vars)
         TryPrint (PrintLR, right);
 
     if (el->type == WHILE)
-        fprintf (asm_text, "jmp :while_no%d\n", cond_now);
+        fprintf (asm_text, "jmp :while_no%lu\n", cond_now);
 
-    fprintf (asm_text, "cond_no%d:\n", cond_now);
+    fprintf (asm_text, "cond_no%lu:\n", cond_now);
     return 0;
 }
 
@@ -417,10 +447,10 @@ bool PrintComp  (FILE* asm_text, element* el, Stack* vars, size_t cond_number)
             switch (el->ind[0])
             {
                 case '>':
-                    fprintf (asm_text, "jbe :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "jbe :cond_no%lu\n", cond_number);
                     return 0;
                 case '<':
-                    fprintf (asm_text, "jae :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "jae :cond_no%lu\n", cond_number);
                     return 0;
                 default:
                     return 1;
@@ -432,16 +462,16 @@ bool PrintComp  (FILE* asm_text, element* el, Stack* vars, size_t cond_number)
             switch (el->ind[0])
             {
                 case '>':
-                    fprintf (asm_text, "jb :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "jb :cond_no%lu\n", cond_number);
                     return 0;
                 case '<':
-                    fprintf (asm_text, "ja :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "ja :cond_no%lu\n", cond_number);
                     return 0;
                 case '!':
-                    fprintf (asm_text, "je :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "je :cond_no%lu\n", cond_number);
                     return 0;
                 case '=':
-                    fprintf (asm_text, "jne :cond_no%d\n", cond_number);
+                    fprintf (asm_text, "jne :cond_no%lu\n", cond_number);
                     return 0;
                 default:
                     return 1;

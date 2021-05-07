@@ -3,13 +3,11 @@
 #include <assert.h>
 #include <string.h>
 
-#pragma warning (disable : 4996)
-
 #define create_el element* el_crt = ElementConstructor (stk, type, sy)
 
-#define tree_error_printf {                                                                      \
-                          printf ("\n""Îøèáêà: äåðåâî ïîâðåæäåíî. Îáðàòèòåñü ê ðàçðàáîò÷èêó.\n");\
-                          break;                                                                 \
+#define tree_error_printf {                                                                           \
+                          printf ("\n""Error: The tree is damaged. Please contact the developer. \n");\
+                          break;                                                                      \
                           }
 
 #define anal_ass assert (tree);  \
@@ -21,10 +19,10 @@
 
 #define check_parse(el) if (el == PARSE_ERR) return PARSE_ERR
 
-#define require_exit  {                                                                              \
-                          printf ("Require error in function %s, line %d\n", __FUNCSIG__, __LINE__); \
-                          printf ("It was in lexeme: %s\n", (*el_now)->ind);                         \
-                          return PARSE_ERR;                                                          \
+#define require_exit  {                                                                                      \
+                          printf ("Require error in function %s, line %d\n", __PRETTY_FUNCTION__, __LINE__); \
+                          printf ("It was in lexeme: %s\n", (*el_now)->ind);                                 \
+                          return PARSE_ERR;                                                                  \
                       }
 
 #define require(what) if ((*el_now)->type != what) \
@@ -80,15 +78,17 @@ typedef unsigned long long storm;
 
 const storm STORMY_PETREL = 0xBADDED1DE7BB07A1;
 
-const size_t MALE_LEN = 3;
+// const size_t MALE_LEN = 3;
 
-const char    SIN_STR[] = "semen";
-const char    COS_STR[] = "cum";
-const char  PRINT_STR[] = "cumming";
-const char   SCAN_STR[] = "swallow";
-const char     IF_STR[] = "fantasies";
-const char  WHILE_STR[] = "let's go";
-const char RETURN_STR[] = "next door";
+// Old code: without â™‚
+
+const char    SIN_STR[] = "â™‚semenâ™‚";
+const char    COS_STR[] = "â™‚cumâ™‚";
+const char  PRINT_STR[] = "â™‚cummingâ™‚";
+const char   SCAN_STR[] = "â™‚swallowâ™‚";
+const char     IF_STR[] = "â™‚fantasiesâ™‚";
+const char  WHILE_STR[] = "â™‚let's goâ™‚";
+const char RETURN_STR[] = "â™‚next doorâ™‚";
 
 //! This is structure of stack.
 

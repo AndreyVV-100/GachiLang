@@ -5,8 +5,8 @@ void StackConstructor (Stack* stk, const size_t max_size)
 	assert (stk);
 	assert (max_size);
 
-	if (!(stk->buffer == ERR_FREE && stk->status_error == STK_DEL ||
-		  stk->buffer == nullptr  && stk->status_error == NOT_CREATED))
+	if (!((stk->buffer == ERR_FREE && stk->status_error == STK_DEL) ||
+		  (stk->buffer == nullptr  && stk->status_error == NOT_CREATED)))
 	{
 		stk->status_error = BAD_CREATE;
 		StackLog (stk);
@@ -343,8 +343,8 @@ void StackLog(Stack* stk)
 			break;
 	};
 
-	fprintf (file, "size = %d\n" "capacity = %d\n" "min_capacity = %d\n" "buffer:\n", 
-			   stk->size, 	 stk->capacity,	   stk->min_capacity);
+	fprintf (file, "size = %lu\n" "capacity = %lu\n" "min_capacity = %lu\n" "buffer:\n", 
+			   stk->size,     stk->capacity,     stk->min_capacity);
 
 	/*
 	fprintf (file, "begin buffer petrel = %llX\n" "end buffer petrel   = %llX\n",
@@ -355,7 +355,7 @@ void StackLog(Stack* stk)
 	for (int element = 0; element < stk->capacity; element++)
 		fprintf (file, "[%d] = %lf\n", element, stk->buffer[element]);
 		*/
-	for (int i_elem = 0; i_elem < stk->size; i_elem++)
+	for (size_t i_elem = 0; i_elem < stk->size; i_elem++)
 		printf ("Type: %d - %s\n", stk->buffer[i_elem].type, (stk->buffer[i_elem].ind) ? stk->buffer[i_elem].ind : "");
 
 	fprintf (file, "\n" "End of log.\n");

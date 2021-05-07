@@ -1,15 +1,5 @@
 #include "Stack.h"
 
-/*
-    Арифметическое переполнение: использование оператора "*" на байтовом значении 4 и
-    приведение результата к байтовому значению 8. Приведите значение к более широкому
-    типу перед вызовом оператора "*", чтобы избежать переполнения (io.2).
-*/
-#pragma warning (disable : 26451)
-
-// Тип перечисления не входит в область. Старайтесь использовать "enum class" вместо "enum".
-#pragma warning (disable : 26812)
-
 element* PARSE_ERR = (element*) 1;
 
 void TreeConstructor (Tree* tree)
@@ -161,7 +151,7 @@ bool LexicalAnalyze (Tree* tree, const char* file_path)
 
         if (CheckElement (tree, &code_now))
         {
-            printf ("Error in line %u\n", line_now);
+            printf ("Error in line %lu\n", line_now);
             TreeDestructor (tree);
             return 1;
         }
@@ -605,11 +595,16 @@ element* GetReturn    (element** el_now)
     parse_ass;
     require_ind;
 
-    const size_t without_backslash_0 = 1;
+    // Old code:
+
+    /* const size_t without_backslash_0 = 1;
     const size_t return_size  = sizeof (RETURN_STR) - without_backslash_0;
 
     if ((*el_now)->len != return_size + 2 * MALE_LEN || 
         strncmp (RETURN_STR, (*el_now)->ind + MALE_LEN, return_size))
+        return nullptr; */
+
+    if (strcmp (RETURN_STR, (*el_now)->ind))
         return nullptr;
 
     element* el_result = *el_now;
@@ -626,7 +621,9 @@ element* GetCond      (element** el_now)
     parse_ass;
     require_ind;
 
-    const size_t without_backslash_0 = 1;
+    // Old code:
+
+/*     const size_t without_backslash_0 = 1;
 
     const size_t    if_size  = sizeof (IF_STR)    - without_backslash_0;
     const size_t while_size  = sizeof (WHILE_STR) - without_backslash_0;
@@ -638,6 +635,14 @@ element* GetCond      (element** el_now)
          if (strncmp (IF_STR,    (*el_now)->ind + MALE_LEN,    if_size) == 0)
         (*el_now)->type = IF;
     else if (strncmp (WHILE_STR, (*el_now)->ind + MALE_LEN, while_size) == 0)
+        (*el_now)->type = WHILE;
+    else
+        require_exit;
+ */
+
+    if (strcmp (IF_STR, (*el_now)->ind) == 0)
+        (*el_now)->type = IF;
+    else if (strcmp (WHILE_STR, (*el_now)->ind) == 0)
         (*el_now)->type = WHILE;
     else
         require_exit;
@@ -788,6 +793,9 @@ element* GetP         (element** el_now)
             el_result = *el_now;
             next;
             break;
+
+        default:
+            return PARSE_ERR;
     }
 
     return el_result;

@@ -6,6 +6,8 @@
 # MY IGNORE
 *.png
 *.dot
+*.out
+stklog.txt
 
 # User-specific files
 *.rsuser

@@ -11,8 +11,9 @@
                                 return 1;                       \
                             }
 
+const size_t VAR_WASNT_CREATED = 1; // Not divisible by 8 - good
+const size_t JMP_NUM_SIZE = 4;
 const size_t ALIGN = 0x1000;
-char   XMM_COUNTER = 0;
 
 struct PointerPlace;
 
@@ -33,6 +34,7 @@ struct Elf
     FuncPointer*   functions = nullptr;
     size_t         text_size = 0;
     size_t aligned_text_size = 0;
+    char xmm_counter = 0;
 };
 
 struct PointerPlace
@@ -40,8 +42,6 @@ struct PointerPlace
     size_t point = __SIZE_MAX__;
     PointerPlace* next_place = nullptr;
 };
-
-// ToDo: Write functions
 
 bool ElfConstructor (Elf* elf);
 
@@ -67,6 +67,8 @@ bool ElfEndFunc     (Elf* elf);
 
 bool ElfCreateJumps (Elf* elf);
 
+bool ElfAddLibrary  (Elf* elf, const char* lib_name, FuncPointer* lib_p);
+
 bool ElfWrite       (Elf* elf);
 
 bool FuncPointerConstructor (Elf* elf, const char* func_name);
@@ -77,29 +79,19 @@ bool FuncPointerGetNewPlace (FuncPointer* func_p, size_t place);
 
 void FuncPointerFillPlaces  (FuncPointer* func_p, char* text);
 
-// ?
+// ToDo: Write help functions
 
 bool ElfDump (Elf* elf);
 
 bool ElfLog  (Elf* elf);
 
-// ToDo: Rewrite functions
-
 void GoAsm (Tree* tree);
-
-bool PrintService (Elf* elf, const char* file_path);
-
-// void DeleteFuncSpaces (element* el);
 
 bool PrintDec  (Elf* elf, element* el);
 
 bool PrintFunc (Elf* elf, element * el);
 
 bool TakeFuncVars (element * el, Stack * vars, char* var_count);
-
-bool PrintParam (Elf* elf, element * el, Stack * vars);
-
-bool SaveParam  (Elf* elf, element * el, Stack * vars);
 
 char VarNumber (Stack * vars, const char* var_name);
 
@@ -118,3 +110,11 @@ bool PrintCond  (Elf* elf, element * el, Stack * vars);
 bool PrintComp  (Elf* elf, element * el, Stack * vars);
 
 bool PrintCallParam (Elf* elf, element* el, Stack* vars, int* push_shift);
+
+bool PrintArithNum  (Elf* elf, element* el);
+
+bool PrintArithVar  (Elf* elf, element* el, Stack* vars);
+
+bool PrintArithOper (Elf* elf, element* el, Stack* vars);
+
+bool PrintSqrt (Elf* elf, element* el, Stack* vars);

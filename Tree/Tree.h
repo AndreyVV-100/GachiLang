@@ -85,6 +85,7 @@ const storm STORMY_PETREL = 0xBADDED1DE7BB07A1;
 
 const char    SIN_STR[] = "♂semen♂";
 const char    COS_STR[] = "♂cum♂";
+const char   SQRT_STR[] = "♂spanking♂";
 const char  PRINT_STR[] = "♂cumming♂";
 const char   SCAN_STR[] = "♂swallow♂";
 const char     IF_STR[] = "♂fantasies♂";

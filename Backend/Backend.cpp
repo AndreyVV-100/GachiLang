@@ -48,14 +48,11 @@ bool ElfAddBytes    (Elf* elf, const char* bytes, size_t amount_bytes)
 {
     assert (elf);
     assert (bytes);
-
     if (elf->aligned_text_size < elf->text_size + amount_bytes)
         if (ElfResizeText (elf))
             return 1;
 
-    for (size_t i_byte = 0; i_byte < amount_bytes; i_byte++) // ToDo: memcpy
-        elf->text[i_byte + elf->text_size] = bytes[i_byte];
-
+    memcpy (elf->text + elf->text_size, bytes, amount_bytes);
     elf->text_size += amount_bytes;
     return 0;
 }
@@ -85,6 +82,12 @@ bool ElfFillZero    (Elf* elf)
 bool ElfAddPlace    (Elf* elf, const char* func_name, size_t place)
 {
     assert (elf);
+
+    if (strcmp (PRINT_STR, func_name) == 0)
+        return ElfAddPrintf (elf, place);
+
+    if (strcmp (SCAN_STR, func_name)  == 0)
+        return ElfAddScanf  (elf, place);
 
     FuncPointer* func_p = elf->functions;
     while (func_p)
@@ -147,7 +150,7 @@ bool ElfStartFunc   (Elf* elf)
 bool ElfEndFunc     (Elf* elf)
 {
     assert (elf);
-    return ElfAddBytes (elf, "\x48\x81\xC4\x80\x00\x00\x00\x48\x89\xEC\x5D\xC3", 12);
+    return ElfAddBytes (elf, "\x48\x89\xEC\x5D\xC3", 5);
     // add rsp, 128
     // mov rsp, rbp
     // pop rbp
@@ -172,36 +175,30 @@ bool ElfCreateJumps (Elf* elf)
         func_p = func_p->p_next;
     }
 
-    if (elf->printf_.last_pl) // ToDo: Delete copypaste
-    {
-        char* printf_text  = nullptr;
-        size_t printf_size = ReadTxt (&printf_text, "Libraries/printf.gcmlib");
-        if (!printf_size)
+    if (elf->printf_.last_pl)
+        if (ElfAddLibrary (elf, "Libraries/printf.gcmlib", &(elf->printf_)))
             return 1;
 
-        elf->printf_.func_pl = elf->text_size;
-        if (ElfAddBytes (elf, printf_text, printf_size))
+    if (elf->scanf_.last_pl)
+        if (ElfAddLibrary (elf, "Libraries/scanf.gcmlib", &(elf->scanf_)))
             return 1;
 
-        FuncPointerFillPlaces (&(elf->printf_), elf->text);
-        free (printf_text);
-    }
+    return 0;
+}
 
-    if (elf->scanf_.last_pl) // ToDo: Delete copypaste
-    {
-        char* scanf_text  = nullptr;
-        size_t scanf_size = ReadTxt (&scanf_text, "Libraries/scanf.gcmlib");
-        if (!scanf_size)
-            return 1;
+bool ElfAddLibrary  (Elf* elf, const char* lib_name, FuncPointer* lib_p)
+{
+    char* lib_text  = nullptr;
+    size_t lib_size = ReadTxt (&lib_text, lib_name);
+    if (!lib_size)
+        return 1;
 
-        elf->scanf_.func_pl = elf->text_size;
-        if (ElfAddBytes (elf, scanf_text, scanf_size))
-            return 1;
+    lib_p->func_pl = elf->text_size;
+    if (ElfAddBytes (elf, lib_text, lib_size))
+        return 1;
 
-        FuncPointerFillPlaces (&(elf->scanf_), elf->text);
-        free (scanf_text);
-    }
-
+    FuncPointerFillPlaces (lib_p, elf->text);
+    free (lib_text);
     return 0;
 }
 
@@ -296,7 +293,7 @@ void FuncPointerFillPlaces  (FuncPointer* func_p, char* text)
 
     while (i_place)
     {
-        *(int*) (text + i_place->point) = func_addr - 4 - i_place->point; // 4 - size of place
+        *(int*) (text + i_place->point) = func_addr - JMP_NUM_SIZE - i_place->point;
         i_place = i_place->next_place;
     }
     return;
@@ -327,40 +324,6 @@ void GoAsm (Tree* code)
     return;
 }
 
-/* bool PrintService (Elf* elf, const char* file_path) // ToDo: Not actually
-{
-    assert (asm_text);
-
-    char* asm_begin = nullptr;
-    
-    if (!ReadTxt (&asm_begin, file_path))
-        return 1;
-
-    fprintf (asm_text, "%s", asm_begin);
-    free (asm_begin);
-    return 0; // ToDo: There was no return!
-} */
-
-/* void DeleteFuncSpaces (element* el) // ToDo: Not actually
-{
-    if (!el || (el->type != FUNC && el->type != CALL))
-        return;
-
-    char* ind = el->ind;
-
-    while (*ind != '\0')
-    {
-        if (*ind == ' ' || *ind == '\t' || *ind == '\r' || *ind == '\n')
-            *ind = '_';
-        ind++;
-    }
-
-    DeleteFuncSpaces (el->left);
-    DeleteFuncSpaces (el->right);
-
-    return;
-} */
-
 bool PrintDec (Elf* elf, element* el)
 {
     assert (elf);
@@ -382,19 +345,18 @@ bool PrintFunc (Elf* elf, element* el)
 {
     assert (elf);
     assert (el);
-
     if (el->type != FUNC)
         return 1;
 
     ElfAddFunc (elf, el->ind);
-    XMM_COUNTER = 0;
+    elf->xmm_counter = 0;
 
     const size_t max_var_num = 32;
     Stack vars_ = {};
     StackConstructor (&vars_, max_var_num);
 
     char var_count = 0xF8;
-    if (TakeFuncVars (el, &vars_, &var_count)) // ToDo: See, maybe OK
+    if (TakeFuncVars (el, &vars_, &var_count))
     {
         StackDestructor (&vars_);
         return 1;
@@ -402,10 +364,7 @@ bool PrintFunc (Elf* elf, element* el)
 
     Stack* vars = &vars_;
     ElfStartFunc (elf);
-
-    // TryPrint (PrintParam, left); // ToDo: Only remember
     TryPrint (PrintLR,   right);
-
     ElfEndFunc (elf);
     return 0;
 }
@@ -417,7 +376,7 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
         return 0;
 
     element* el_now  = el;
-    char param_count = 0x10; // ToDo: Magic const
+    char param_count = 0x10; // First param - [rbp + 0x10], second - [rbp + 0x18] and ect.
 
     while (el_now->type == PARAM)
     {
@@ -448,7 +407,7 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
             return 1;
         }
 
-        if (VarNumber (vars, el->left->ind) != 1) // ToDo: Magic const
+        if (VarNumber (vars, el->left->ind) != VAR_WASNT_CREATED)
             return 0;
 
         el->left->var_pos = *var_count;
@@ -466,40 +425,6 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
     return TakeFuncVars (el->right, vars, var_count);
 }
 
-/* bool PrintParam (Elf* elf, element* el, Stack* vars) // ToDo: Not actually
-{
-    assert (elf);
-    assert (vars);
-
-    if (PrintService (asm_text, "Backend/ServiceFiles/FuncBegin.txt")) // ToDo: Create stack frame
-        return 1;
-
-    fprintf (asm_text, "\n""push %lu\n"
-                           "pop [rax + 1]\n",
-             vars->size + 2);
-
-    if (SaveParam (elf, el, vars))
-        return 1;
-
-    return 0;
-}
- */
-
-/* bool SaveParam (Elf* elf, element* el, Stack* vars) // ToDo: Not actually
-{
-    assert (elf);
-    assert (vars);
-    if (!el)
-        return 0;
-
-    TryPrint (SaveParam, left);
-    size_t var_num = VarNumber (vars, el->ind); // ToDo: How it works?
-    if (var_num < 2)
-        return 1;
-    fprintf (asm_text, "pop [rax + %lu]\n", var_num);
-    return 0;
-} */
-
 char VarNumber (Stack* vars, const char* var_name)
 {
     assert (vars);
@@ -509,8 +434,7 @@ char VarNumber (Stack* vars, const char* var_name)
         if (strcmp (var_name, vars->buffer[result].ind) == 0)
             return vars->buffer[result].var_pos;
 
-    // printf ("Error: No var with name \"%s\".\n", var_name);
-    return 1; // ToDo: Error const
+    return VAR_WASNT_CREATED;
 }
 
 bool PrintLR    (Elf* elf, element* el, Stack* vars)
@@ -526,7 +450,7 @@ bool PrintLR    (Elf* elf, element* el, Stack* vars)
         return 0;
     }
 
-    XMM_COUNTER = 0;
+    elf->xmm_counter = 0;
 
     switch (el->type)
     {
@@ -553,66 +477,281 @@ bool PrintEqual (Elf* elf, element* el, Stack* vars)
     if (!(el->left) || !(el->right) || el->left->type != VAR)
         return 1;
 
-    TryPrint (PrintArith, right); // ToDo: xmm counter
+    TryPrint (PrintArith, right);
 
+    // movsd [rbp - 8*№], xmm0
     char var_num = VarNumber (vars, el->left->ind);
+    if (var_num == VAR_WASNT_CREATED)
+        return 1;
 
-    ElfAddBytes (elf, "\xF2\x0F\x11\x45", 4); // ToDo: In xmm0?
+    ElfAddBytes (elf, "\xF2\x0F\x11\x45", 4);
     return ElfAddBytes (elf, &var_num, 1);
 }
 
-bool PrintArith (Elf* elf, element* el, Stack* vars) // ToDo: Functions
+bool PrintArith (Elf* elf, element* el, Stack* vars)
 {
     print_ass;
 
     if (el->type == CALL)
-    {
-        if (PrintCall (elf, el, vars))
+        return PrintCall (elf, el, vars);
+
+    if (el->type == NUM)
+        return PrintArithNum (elf, el);
+
+    if (el->type == VAR)
+        return PrintArithVar (elf, el, vars);
+
+    return PrintArithOper (elf, el, vars);
+}
+
+bool PrintCall  (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
+
+    if (strcmp (SQRT_STR, el->ind) == 0)
+        return PrintSqrt (elf, el, vars);
+
+    int push_shift = 0; // number of pushes on bytes
+    if (PrintCallParam (elf, el->left, vars, &push_shift))
+        return 1;
+
+    // ToDo: Sin, cos, pow, sqrt
+    
+    ElfAddPlace (elf, el->ind, elf->text_size + 1);
+
+    // call func
+    ElfAddBytes (elf, "\xE8\x00\x00\x00\x00", 5);
+    
+    // This is delete pushes
+    // add rsp, push_shift
+    ElfAddBytes (elf, "\x48\x81\xC4", 3);
+    ElfAddBytes (elf, (char*) &push_shift, 4);
+
+    // ToDo: Delete copypaste
+    // movq xmm?, rax
+    ElfAddBytes (elf, (elf->xmm_counter < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
+
+    char num_register = (elf->xmm_counter % 8) * 8 + 0xC0;
+    elf->xmm_counter += 1;
+    ElfAddBytes (elf, &num_register, 1); 
+    return 0;
+}
+
+bool PrintRet   (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
+
+    if (el->type != RET)
+        return 1;
+
+    TryPrint (PrintArith, left);
+
+    // movq rax, xmm0
+    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC0", 5);
+    return ElfEndFunc (elf);
+}
+
+bool PrintCond  (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
+    if (el->type != IF && el->type != WHILE)
+        return 1;
+    
+    int start_of_while = (int) (elf->text_size);
+
+    if (PrintComp (elf, el->left, vars)) 
             return 1;
 
-/*  This is in PrintCall
-        // movq xmm?, rax
-        ElfAddBytes (elf, (XMM_COUNTER < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
+    size_t jump_from_place = elf->text_size;
 
-        char num_register = (XMM_COUNTER % 8) * 8 + 0xC0;
-        XMM_COUNTER++;
-        ElfAddBytes (elf, &num_register, 1); */
-        return 0;
+    if (el->right)
+        TryPrint (PrintLR, right);
+
+    if (el->type == WHILE)
+    {   
+        // jmp start_of_while
+        ElfAddBytes (elf, "\xE9", 1);
+        start_of_while -= elf->text_size + JMP_NUM_SIZE;
+        ElfAddBytes (elf, (char*) &start_of_while, JMP_NUM_SIZE);
     }
+
+    *((int*) (elf->text + jump_from_place - JMP_NUM_SIZE)) = (int) (elf->text_size - jump_from_place);
+    return 0;
+}
+
+bool PrintComp  (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
+
+    if (el->type != COND)
+        return 1;
+
+    TryPrint (PrintArith, left);
+    // movq rdx, xmm0
+    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC2", 5);
+
+    elf->xmm_counter = 0;
+    TryPrint (PrintArith, right);
+    // movq xmm1, rdx
+    ElfAddBytes (elf, "\x66\x48\x0F\x6E\xCA", 5);
+
+    switch (el->len)
+    {
+        case 1:
+        {
+            switch (el->ind[0])
+            {
+                case '>':
+                    // vcmpsd xmm2, xmm1, xmm0, 2
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x02\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                case '<':
+                    // vcmpsd xmm2, xmm1, xmm0, 0x0D
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0D\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                default:
+                    return 1;
+            }
+        }
+
+        case 2:
+        {
+            switch (el->ind[0])
+            {
+                case '>':
+                    // vcmpsd xmm2, xmm1, xmm0, 1
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x01\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                case '<':
+                    // vcmpsd xmm2, xmm1, xmm0, 0x0E
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0E\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                case '!':
+                    // vcmpsd xmm2, xmm1, xmm0, 0
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x00\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                case '=':
+                    // vcmpsd xmm2, xmm1, xmm0, 4
+                    // movq rax, xmm2
+                    // cmp rax, 0
+                    // jne ?
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x04\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
+                    return 0;
+
+                default:
+                    return 1;
+            }
+        }
+
+        default:
+            return 1;
+    }
+
+    return 1;
+}
+
+bool PrintCallParam (Elf* elf, element* el, Stack* vars, int* push_shift)
+{
+    assert (elf);
+    assert (vars);
+    assert (push_shift);
+    if (!el)
+        return 0;
+
+    if (PrintCallParam (elf, el->left, vars, push_shift))
+        return 1;
 
     if (el->type == NUM)
     {
         double num = atof (el->ind);
-        // mov rax, number
+        // mov rax, num
         ElfAddBytes (elf, "\x48\xB8", 2);
         ElfAddBytes (elf, (char*) &num, 8);
-
-        // movq xmm?, rax
-        ElfAddBytes (elf, (XMM_COUNTER < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
-
-        char num_register = (XMM_COUNTER % 8) * 8 + 0xC0;
-        XMM_COUNTER++;
-        ElfAddBytes (elf, &num_register, 1);
-        return 0;
     }
 
-    if (el->type == VAR)
+    else if (el->type == VAR)
     {
         char var_num = VarNumber (vars, el->ind);
+        if (var_num == VAR_WASNT_CREATED)
+            return 1;
 
-        if (XMM_COUNTER < 8)
-            ElfAddBytes (elf, "\xF2\x0F\x10", 3);
-        else
-            ElfAddBytes (elf, "\xF2\x44\x0F\x10", 4);
-
-        char num_register = (XMM_COUNTER % 8) * 8 + 0x45;
-        XMM_COUNTER++;
-
-        ElfAddBytes (elf, &num_register, 1);
+        // mov rax, qword [rbp + var_num]
+        ElfAddBytes (elf, "\x48\x8B\x45", 3);
         ElfAddBytes (elf, &var_num, 1);
-        // fprintf (asm_text, "push [rax + %lu]\n", var_num); // ToDo: movsd xmm0, qword [rbp + %lu]
-        return 0;
     }
+
+    else
+        return 1;
+
+    // push rax
+    ElfAddBytes (elf, "\x50", 1);
+    *push_shift += 8;
+    return 0;
+}
+
+bool PrintArithNum  (Elf* elf, element* el)
+{
+    assert (elf);
+    assert (el);
+    double num = atof (el->ind);
+    // mov rax, number
+    ElfAddBytes (elf, "\x48\xB8", 2);
+    ElfAddBytes (elf, (char*) &num, 8);
+
+    // movq xmm?, rax
+    ElfAddBytes (elf, (elf->xmm_counter < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
+
+    char num_register = (elf->xmm_counter % 8) * 8 + 0xC0;
+    elf->xmm_counter += 1;
+    ElfAddBytes (elf, &num_register, 1);
+    return 0;
+}
+
+bool PrintArithVar  (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
+    // movsd xmm?, qword [rbp - 8*№]
+    char var_num = VarNumber (vars, el->ind);
+    if (var_num == VAR_WASNT_CREATED)
+        return 1;
+
+    if (elf->xmm_counter < 8)
+        ElfAddBytes (elf, "\xF2\x0F\x10", 3);
+    else
+        ElfAddBytes (elf, "\xF2\x44\x0F\x10", 4);
+
+    char num_register = (elf->xmm_counter % 8) * 8 + 0x45;
+    elf->xmm_counter += 1;
+
+    ElfAddBytes (elf, &num_register, 1);
+    ElfAddBytes (elf, &var_num, 1);
+    return 0;
+}
+
+bool PrintArithOper (Elf* elf, element* el, Stack* vars)
+{
+    print_ass;
 
     if (el->type != ARITH)
         return 1;
@@ -623,9 +762,9 @@ bool PrintArith (Elf* elf, element* el, Stack* vars) // ToDo: Functions
     // command xmm(№-1), xmm№
     // command = {addsd, subsd, mulsd, divsd} 
 
-    if (XMM_COUNTER < 8)
+    if (elf->xmm_counter < 8)
         ElfAddBytes (elf, "\xF2\x0F", 2);
-    else if (XMM_COUNTER == 8)
+    else if (elf->xmm_counter == 8)
         ElfAddBytes (elf, "\xF2\x41\x0F", 3);
     else
         ElfAddBytes (elf, "\xF2\x45\x0F", 3);
@@ -644,321 +783,43 @@ bool PrintArith (Elf* elf, element* el, Stack* vars) // ToDo: Functions
         case '/':
             ElfAddBytes (elf, "\x5E", 1);
             break;
-        // case '^': // ToDo: Delete operator
+        // case '^': // ToDo: Deleted operator
             // fprintf (asm_text, "pow\n");
             // return 0;
         default:
             return 1;
     }
 
-    char num_register = ((XMM_COUNTER - 2) % 8) * 8 + (XMM_COUNTER - 1) % 8 + 0xC0;
-    XMM_COUNTER--;
+    char num_register = ((elf->xmm_counter - 2) % 8) * 8 + (elf->xmm_counter - 1) % 8 + 0xC0;
+    elf->xmm_counter -= 1;
     ElfAddBytes (elf, &num_register, 1);
     return 0;
 }
 
-bool PrintCall  (Elf* elf, element* el, Stack* vars)
+bool PrintSqrt (Elf* elf, element* el, Stack* vars)
 {
     print_ass;
 
-    int push_shift = 0; // number of pushes on bytes
-
-    if (PrintCallParam (elf, el->left, vars, &push_shift))
-        return 1;
-
-    // Old code:
-
-    /*
-    element* param = el->left;
-
-    while (param)
+    if (el->left->type == NUM)
     {
-        if (param->type == NUM)
-            fprintf (asm_text, "push %s\n", param->ind); 
-
-        else if (param->type == VAR)
-        {
-            size_t var_num = VarNumber (vars, param->ind);
-            if (var_num < 2)
-                return 1;
-            fprintf (asm_text, "push [rax + %lu]\n", var_num);
-        }
-
-        else
+        if (PrintArithNum (elf, el->left))
             return 1;
-
-        param = param->left;
-    } */
-
-/* 
-    const size_t without_backslash_0 = 1;
-    
-    static const size_t   sin_size = sizeof   (SIN_STR) - without_backslash_0;
-    static const size_t   cos_size = sizeof   (COS_STR) - without_backslash_0;
-    static const size_t print_size = sizeof (PRINT_STR) - without_backslash_0;
-    static const size_t  scan_size = sizeof  (SCAN_STR) - without_backslash_0;
-
-    if (sin_size + 2 * MALE_LEN == el->len && strncmp (SIN_STR, el->ind + MALE_LEN, sin_size) == 0)
-    {
-        fprintf (asm_text, "sin\n");
-        return 0;
     }
 
-    if (cos_size + 2 * MALE_LEN == el->len && strncmp (COS_STR, el->ind + MALE_LEN, cos_size) == 0)
+    else if (el->left->type == VAR)
     {
-        fprintf (asm_text, "cos\n");
-        return 0;
-    }
-
-    if (print_size + 2 * MALE_LEN == el->len && strncmp (PRINT_STR, el->ind + MALE_LEN, print_size) == 0)
-    {
-        fprintf (asm_text, "out\n");
-        return 0;
-    }
-
-    if (scan_size + 2 * MALE_LEN == el->len && strncmp (SCAN_STR, el->ind + MALE_LEN, scan_size) == 0)
-    {
-        fprintf (asm_text, "in\n");
-        return 0;
-    } */
-/* ToDo: Warning: Deleted functions, but needed
-    if (strcmp (SIN_STR, el->ind) == 0)
-    {
-        fprintf (asm_text, "sin\n");
-        return 0;
-    }
-
-    if (strcmp (COS_STR, el->ind) == 0)
-    {
-        fprintf (asm_text, "cos\n");
-        return 0;
-    }
- */
-
-    // ToDo: Strcmp to ElfAddPlace
-
-    if (strcmp (PRINT_STR, el->ind) == 0)
-    {
-        // fprintf (asm_text, "out\n");
-        ElfAddPrintf (elf, elf->text_size + 1);
-        // return 0;
-    }
-
-    else if (strcmp (SCAN_STR, el->ind) == 0)
-    {
-        // fprintf (asm_text, "in\n");
-        ElfAddScanf (elf, elf->text_size + 1);
-        // return 0;
+        if (PrintArithVar (elf, el->left, vars))
+            return 1;
     }
     
+    else return 1;
+
+    // sqrtsd xmm?, xmm?
+    char num_register = ((elf->xmm_counter - 1) % 8) * 8 + 0xC0;
+    if (elf->xmm_counter <= 8)
+        ElfAddBytes (elf, "\xF2\x0F\x51", 3);
     else
-        ElfAddPlace (elf, el->ind, elf->text_size + 1);
-
-    // call func
-    ElfAddBytes (elf, "\xE8\x00\x00\x00\x00", 5);
+        ElfAddBytes (elf, "\xF2\x45\x0F\x51", 4);
     
-    // This is delete pushes
-    // add rsp, push_shift
-    ElfAddBytes (elf, "\x48\x81\xC4", 3);
-    ElfAddBytes (elf, (char*) &push_shift, 4);
-
-    // ToDo: Delete copypaste
-    // movq xmm?, rax
-    ElfAddBytes (elf, (XMM_COUNTER < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
-
-    char num_register = (XMM_COUNTER % 8) * 8 + 0xC0;
-    XMM_COUNTER++;
-    ElfAddBytes (elf, &num_register, 1);
-
-    // fprintf (asm_text, "call :%s\n", el->ind); // ToDo: label work    
-    return 0;
-}
-
-bool PrintRet   (Elf* elf, element* el, Stack* vars)
-{
-    print_ass;
-
-    if (el->type != RET)
-        return 1;
-
-    TryPrint (PrintArith, left);
-
-    // movq rax, xmm0
-    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC0", 5);
-    // return PrintService (asm_text, "Backend/ServiceFiles/FuncEnd.txt"); // ToDo: end of func
-    return ElfEndFunc (elf);
-}
-
-bool PrintCond  (Elf* elf, element* el, Stack* vars)
-{
-    print_ass;
-/* 
-    static size_t cond_number = 0;
-    size_t cond_now = cond_number; // ToDo: Save position
-    cond_number++;
- */
-    if (el->type != IF && el->type != WHILE)
-        return 1;
-    
-    int start_of_while = (int) (elf->text_size);
-
-    /* if (el->type == WHILE)
-        fprintf (asm_text, "while_no%lu:\n", cond_now); */
-
-    if (PrintComp (elf, el->left, vars)) 
-            return 1;
-
-    size_t jump_from_place = elf->text_size; // ToDo: Magic const
-
-    if (el->right)
-        TryPrint (PrintLR, right);
-
-    if (el->type == WHILE)
-    {   
-        // jmp start_of_while
-        ElfAddBytes (elf, "\xE9", 1);
-        start_of_while -= elf->text_size + 4;
-        ElfAddBytes (elf, (char*) &start_of_while, 4);
-    }
-
-    /* if (el->type == WHILE)
-        fprintf (asm_text, "jmp :while_no%lu\n", cond_now); // ToDo: if -> jump */
-
-    // fprintf (asm_text, "cond_no%lu:\n", cond_now); // ToDo: relative jump
-
-    *((int*) (elf->text + jump_from_place - 4)) = (int) (elf->text_size - jump_from_place);
-    return 0;
-}
-
-bool PrintComp  (Elf* elf, element* el, Stack* vars)
-{
-    print_ass;
-
-    if (el->type != COND)
-        return 1;
-
-    TryPrint (PrintArith, left);
-    // movq rdx, xmm0
-    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC2", 5);
-
-    XMM_COUNTER = 0;
-    TryPrint (PrintArith, right);
-    // movq xmm1, rdx
-    ElfAddBytes (elf, "\x66\x48\x0F\x6E\xCA", 5);
-
-    switch (el->len)
-    {
-        case 1:
-        {
-            switch (el->ind[0])
-            {
-                case '>':
-                    // vcmpsd xmm2, xmm1, xmm0, 2
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x02\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "jbe :cond_no%lu\n", cond_number);
-                    return 0;
-
-                case '<':
-                    // vcmpsd xmm2, xmm1, xmm0, 0x0D
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0D\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "jae :cond_no%lu\n", cond_number);
-                    return 0;
-
-                default:
-                    return 1;
-            }
-        }
-
-        case 2:
-        {
-            switch (el->ind[0])
-            {
-                case '>':
-                    // vcmpsd xmm2, xmm1, xmm0, 1
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x01\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "jb :cond_no%lu\n", cond_number);
-                    return 0;
-
-                case '<':
-                    // vcmpsd xmm2, xmm1, xmm0, 0x0E
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0E\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "ja :cond_no%lu\n", cond_number);
-                    return 0;
-
-                case '!':
-                    // vcmpsd xmm2, xmm1, xmm0, 0
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x00\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "je :cond_no%lu\n", cond_number);
-                    return 0;
-
-                case '=':
-                    // vcmpsd xmm2, xmm1, xmm0, 4
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x04\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    // fprintf (asm_text, "jne :cond_no%lu\n", cond_number);
-                    return 0;
-
-                default:
-                    return 1;
-            }
-        }
-
-        default:
-            return 1;
-    }
-
-    return 1;
-}
-
-bool PrintCallParam (Elf* elf, element* el, Stack* vars, int* push_shift)
-{
-    if (!el)
-        return 0;
-
-    if (PrintCallParam (elf, el->left, vars, push_shift))
-        return 1;
-
-    if (el->type == NUM)
-    {
-        double num = atof (el->ind);
-        // mov rax, num
-        ElfAddBytes (elf, "\x48\xB8", 2);
-        ElfAddBytes (elf, (char*) &num, 8);
-    }
-        // fprintf (asm_text, "push %s\n", param->ind); // ToDo: mov [rsp + x], num
-
-    else if (el->type == VAR) // ToDo: Delete copypaste.
-    {
-        char var_num = VarNumber (vars, el->ind);
-        // mov rax, qword [rbp + var_num]
-        ElfAddBytes (elf, "\x48\x8B\x45", 3);
-        ElfAddBytes (elf, &var_num, 1);
-        // fprintf (asm_text, "push [rax + %lu]\n", var_num); // ToDo: mov [rsp + x], [rbp + %lu]
-    }
-
-    else
-        return 1;
-
-    // push rax
-    ElfAddBytes (elf, "\x50", 1);
-    *push_shift += 8;
-    return 0;
+    return ElfAddBytes (elf, &num_register, 1);
 }

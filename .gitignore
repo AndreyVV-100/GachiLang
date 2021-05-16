@@ -8,6 +8,11 @@
 *.dot
 *.out
 stklog.txt
+ElfTest
+Backend_old*
+CompileResult
+Reflections
+*.o
 
 # User-specific files
 *.rsuser

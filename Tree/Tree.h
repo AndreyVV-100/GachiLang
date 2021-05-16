@@ -67,6 +67,7 @@ struct element
     element* right  = nullptr;
     char* ind       = nullptr;
     size_t len      = 0;
+    char var_pos    = 0;
 };
 
 typedef element stk_type;

@@ -7,13 +7,34 @@
 #define TryPrint(func, way) if (func (elf, el->way, vars))      \
                             {                                   \
                                 printf ("Print error in function %s, line %d\n", __PRETTY_FUNCTION__, __LINE__); \
-                                printf ("It was on point %p in element: %s\n", el, el->ind);             \
+                                printf ("It was on point %p in element: %s\n", el, el->ind);                     \
                                 return 1;                       \
                             }
+
+#define mov_xmm_rax if (elf->xmm_counter < XMM_MAX)                                                                 \
+                    {                                                                                               \
+                        ElfAddBytes (elf, (elf->xmm_counter < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);     \
+                        char num_register = (elf->xmm_counter % 8) * 8 + 0xC0;                                      \
+                        elf->xmm_counter += 1;                                                                      \
+                        ElfAddBytes (elf, &num_register, 1);                                                        \
+                    }                                                                                               \
+                    else                                                                                            \
+                    {                                                                                               \
+                        printf ("Fucking slave, you are bad programmer!"                                            \
+                                "Your math expression is so big, but your another ♂expression♂ is so small...\n");  \
+                        return 1;                                                                                   \
+                    } 
 
 const size_t VAR_WASNT_CREATED = 1; // Not divisible by 8 - good
 const size_t JMP_NUM_SIZE = 4;
 const size_t ALIGN = 0x1000;
+const char XMM_MAX = 16;
+
+const char FIRST_LOCAL_VAR = 0xF8; // [rbp - 8]
+const char FIRST_PARAMETER = 0x10; // [rbp + 10]
+const char SIZEOF_ALIGN    = 8;
+const char MAX_LOCAL_VAR   = 0x80;
+const char MAX_PARAMETER   = 0x78;
 
 struct PointerPlace;
 
@@ -116,5 +137,9 @@ bool PrintArithNum  (Elf* elf, element* el);
 bool PrintArithVar  (Elf* elf, element* el, Stack* vars);
 
 bool PrintArithOper (Elf* elf, element* el, Stack* vars);
+
+bool PrintSaveXMM   (Elf* elf);
+
+bool PrintLoadXMM   (Elf* elf);
 
 bool PrintSqrt (Elf* elf, element* el, Stack* vars);

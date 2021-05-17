@@ -1,22 +1,5 @@
 ﻿#include "Backend.h"
 
-int main (int argc, char** argv)
-{
-    // ToDo: rsp +=, rsp-=
-    Tree code = {};
-
-    if (GoTree (&code, (argc > 1) ? argv[1] : "Examples/SqrtTripleDick.gcm"))
-    {
-        TreeDestructor (&code);
-        return 0;
-    }
-    // CreateGraph (&code);
-    GoAsm  (&code);
-
-    TreeDestructor (&code);
-    return 0;
-}
-
 bool ElfConstructor (Elf* elf)
 {
     assert (elf);
@@ -141,20 +124,20 @@ bool ElfAddFunc     (Elf* elf, const char* func_name)
 bool ElfStartFunc   (Elf* elf)
 {
     assert (elf);
-    return ElfAddBytes (elf, "\x55\x48\x89\xE5\x48\x81\xEC\x80\x00\x00\x00", 11);
-    // push rbp
-    // mov rbp, rsp
-    // sub rsp, 128
+    return ElfAddBytes (elf, "\x55"                          // push rbp    
+                             "\x48\x89\xE5"                  // mov rbp, rsp
+                             "\x48\x81\xEC\x80\x00\x00\x00", // sub rsp, 128
+                             11);
+    // ToDo: rsp +=, rsp-=
 }
 
 bool ElfEndFunc     (Elf* elf)
 {
     assert (elf);
-    return ElfAddBytes (elf, "\x48\x89\xEC\x5D\xC3", 5);
-    // add rsp, 128
-    // mov rsp, rbp
-    // pop rbp
-    // ret
+    return ElfAddBytes (elf, "\x48\x89\xEC" // mov rsp, rbp
+                             "\x5D"         // pop rbp
+                             "\xC3",        // ret
+                             5);
 }
 
 bool ElfCreateJumps (Elf* elf)
@@ -307,11 +290,12 @@ void GoAsm (Tree* code)
     if (ElfConstructor (&elf))
         return;
     
-    // call sex
-    // mov rax, 0x3C
-    // xor rdi, rdi
-    // syscall
-    ElfAddBytes (&elf, "\xE8\x00\x00\x00\x00\x48\xC7\xC0\x3C\x00\x00\x00\x48\x31\xFF\x0F\x05", 17);
+    ElfAddBytes (&elf, "\xE8\x00\x00\x00\x00"           // call sex     
+                       "\x48\xC7\xC0\x3C\x00\x00\x00"   // mov rax, 0x3C
+                       "\x48\x31\xFF"                   // xor rdi, rdi 
+                       "\x0F\x05",                      // syscall      
+                       17);
+
     ElfAddPlace (&elf, "♂sex♂", 1);
 
     if (PrintDec (&elf, code->head))
@@ -355,7 +339,7 @@ bool PrintFunc (Elf* elf, element* el)
     Stack vars_ = {};
     StackConstructor (&vars_, max_var_num);
 
-    char var_count = 0xF8;
+    char var_count = FIRST_LOCAL_VAR;
     if (TakeFuncVars (el, &vars_, &var_count))
     {
         StackDestructor (&vars_);
@@ -376,7 +360,8 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
         return 0;
 
     element* el_now  = el;
-    char param_count = 0x10; // First param - [rbp + 0x10], second - [rbp + 0x18] and ect.
+    char param_count = FIRST_PARAMETER; 
+    // First param - [rbp + 0x10], second - [rbp + 0x18] and ect.
 
     while (el_now->type == PARAM)
     {
@@ -389,9 +374,9 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
         el_now->var_pos = param_count;
         StackPush (vars, *el_now);
 
-        if (param_count == 0x78)
+        if (param_count == MAX_PARAMETER)
             printf ("Warning: Maybe parameter counter overfull.\n");
-        param_count += 8;
+        param_count += SIZEOF_ALIGN;
 
         if (el_now->left == nullptr)
             return 0;
@@ -413,9 +398,9 @@ bool TakeFuncVars (element* el, Stack* vars, char* var_count)
         el->left->var_pos = *var_count;
         StackPush (vars, *(el->left));
 
-        if (*var_count == 0x80)
+        if (*var_count == MAX_LOCAL_VAR)
             printf ("Warning: Maybe variable counter overfull.\n");
-        *var_count -= 8;
+        *var_count -= SIZEOF_ALIGN;
 
         return 0;
     }
@@ -511,6 +496,8 @@ bool PrintCall  (Elf* elf, element* el, Stack* vars)
     if (strcmp (SQRT_STR, el->ind) == 0)
         return PrintSqrt (elf, el, vars);
 
+    PrintSaveXMM (elf);
+
     int push_shift = 0; // number of pushes on bytes
     if (PrintCallParam (elf, el->left, vars, &push_shift))
         return 1;
@@ -527,13 +514,10 @@ bool PrintCall  (Elf* elf, element* el, Stack* vars)
     ElfAddBytes (elf, "\x48\x81\xC4", 3);
     ElfAddBytes (elf, (char*) &push_shift, 4);
 
-    // ToDo: Delete copypaste
     // movq xmm?, rax
-    ElfAddBytes (elf, (elf->xmm_counter < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
+    mov_xmm_rax
 
-    char num_register = (elf->xmm_counter % 8) * 8 + 0xC0;
-    elf->xmm_counter += 1;
-    ElfAddBytes (elf, &num_register, 1); 
+    PrintLoadXMM (elf);
     return 0;
 }
 
@@ -569,12 +553,12 @@ bool PrintCond  (Elf* elf, element* el, Stack* vars)
 
     if (el->type == WHILE)
     {   
-        // jmp start_of_while
-        ElfAddBytes (elf, "\xE9", 1);
+        ElfAddBytes (elf, "\xE9", 1); // 0xE9 = jmp
         start_of_while -= elf->text_size + JMP_NUM_SIZE;
         ElfAddBytes (elf, (char*) &start_of_while, JMP_NUM_SIZE);
     }
 
+    // Place of conditional jump
     *((int*) (elf->text + jump_from_place - JMP_NUM_SIZE)) = (int) (elf->text_size - jump_from_place);
     return 0;
 }
@@ -587,13 +571,11 @@ bool PrintComp  (Elf* elf, element* el, Stack* vars)
         return 1;
 
     TryPrint (PrintArith, left);
-    // movq rdx, xmm0
-    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC2", 5);
+    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xC2", 5); // movq rdx, xmm0
 
     elf->xmm_counter = 0;
     TryPrint (PrintArith, right);
-    // movq xmm1, rdx
-    ElfAddBytes (elf, "\x66\x48\x0F\x6E\xCA", 5);
+    ElfAddBytes (elf, "\x66\x48\x0F\x6E\xCA", 5); // movq xmm1, rdx
 
     switch (el->len)
     {
@@ -602,25 +584,17 @@ bool PrintComp  (Elf* elf, element* el, Stack* vars)
             switch (el->ind[0])
             {
                 case '>':
-                    // vcmpsd xmm2, xmm1, xmm0, 2
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x02\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x02", 5); // vcmpsd xmm2, xmm1, xmm0, 2
+                    break;
 
                 case '<':
-                    // vcmpsd xmm2, xmm1, xmm0, 0x0D
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0D\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0D", 5); // vcmpsd xmm2, xmm1, xmm0, 0x0D
+                    break;
 
                 default:
                     return 1;
             }
+            break;
         }
 
         case 2:
@@ -628,47 +602,37 @@ bool PrintComp  (Elf* elf, element* el, Stack* vars)
             switch (el->ind[0])
             {
                 case '>':
-                    // vcmpsd xmm2, xmm1, xmm0, 1
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x01\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x01", 5); // vcmpsd xmm2, xmm1, xmm0, 1
+                    break;
 
                 case '<':
-                    // vcmpsd xmm2, xmm1, xmm0, 0x0E
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0E\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x0E", 5); // vcmpsd xmm2, xmm1, xmm0, 0x0E
+                    break;
 
                 case '!':
-                    // vcmpsd xmm2, xmm1, xmm0, 0
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x00\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x00", 5); // vcmpsd xmm2, xmm1, xmm0, 0
+                    break;
 
                 case '=':
-                    // vcmpsd xmm2, xmm1, xmm0, 4
-                    // movq rax, xmm2
-                    // cmp rax, 0
-                    // jne ?
-                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x04\x66\x48\x0F\x7E\xD0\x48\x83\xF8\x00\x0F\x85\x00\x00\x00\x00", 20);
-                    return 0;
+                    ElfAddBytes (elf, "\xC5\xF3\xC2\xD0\x04", 5); // vcmpsd xmm2, xmm1, xmm0, 4
+                    break;
 
                 default:
                     return 1;
             }
+            break;
         }
 
         default:
             return 1;
     }
 
-    return 1;
+    ElfAddBytes (elf, "\x66\x48\x0F\x7E\xD0"        // movq rax, xmm2
+                      "\x48\x83\xF8\x00"            // cmp rax, 0
+                      "\x0F\x85\x00\x00\x00\x00",   // jne 00 00 00 00 (will be patched)
+                      15);
+
+    return 0;
 }
 
 bool PrintCallParam (Elf* elf, element* el, Stack* vars, int* push_shift)
@@ -720,32 +684,37 @@ bool PrintArithNum  (Elf* elf, element* el)
     ElfAddBytes (elf, (char*) &num, 8);
 
     // movq xmm?, rax
-    ElfAddBytes (elf, (elf->xmm_counter < 8) ? "\x66\x48\x0F\x6E" : "\x66\x4C\x0F\x6E", 4);
-
-    char num_register = (elf->xmm_counter % 8) * 8 + 0xC0;
-    elf->xmm_counter += 1;
-    ElfAddBytes (elf, &num_register, 1);
+    mov_xmm_rax
     return 0;
 }
 
 bool PrintArithVar  (Elf* elf, element* el, Stack* vars)
 {
     print_ass;
-    // movsd xmm?, qword [rbp - 8*№]
-    char var_num = VarNumber (vars, el->ind);
-    if (var_num == VAR_WASNT_CREATED)
-        return 1;
+    if (elf->xmm_counter < XMM_MAX)
+    {
+        // movsd xmm?, qword [rbp - 8*№]
+        char var_num = VarNumber (vars, el->ind);
+        if (var_num == VAR_WASNT_CREATED)
+            return 1;
 
-    if (elf->xmm_counter < 8)
-        ElfAddBytes (elf, "\xF2\x0F\x10", 3);
+        if (elf->xmm_counter < 8)
+            ElfAddBytes (elf, "\xF2\x0F\x10", 3);
+        else
+            ElfAddBytes (elf, "\xF2\x44\x0F\x10", 4);
+
+        char num_register = (elf->xmm_counter % 8) * 8 + 0x45;
+        elf->xmm_counter += 1;
+
+        ElfAddBytes (elf, &num_register, 1);
+        ElfAddBytes (elf, &var_num, 1);
+    }
     else
-        ElfAddBytes (elf, "\xF2\x44\x0F\x10", 4);
-
-    char num_register = (elf->xmm_counter % 8) * 8 + 0x45;
-    elf->xmm_counter += 1;
-
-    ElfAddBytes (elf, &num_register, 1);
-    ElfAddBytes (elf, &var_num, 1);
+    {
+        printf ("Fucking slave, you are bad programmer! Your math expression is so big.\n");
+        return 1;
+    }
+    
     return 0;
 }
 
@@ -759,29 +728,29 @@ bool PrintArithOper (Elf* elf, element* el, Stack* vars)
     TryPrint (PrintArith, left);
     TryPrint (PrintArith, right);
 
-    // command xmm(№-1), xmm№
-    // command = {addsd, subsd, mulsd, divsd} 
+    // arithm_op xmm(№-1), xmm№
+    // arithm_op = {addsd, subsd, mulsd, divsd} 
 
     if (elf->xmm_counter < 8)
-        ElfAddBytes (elf, "\xF2\x0F", 2);
+        ElfAddBytes (elf, "\xF2\x0F", 2); // arithm_op xmm[0..6], xmm[1..7]
     else if (elf->xmm_counter == 8)
-        ElfAddBytes (elf, "\xF2\x41\x0F", 3);
+        ElfAddBytes (elf, "\xF2\x41\x0F", 3); // arithm_op xmm7, xmm8
     else
-        ElfAddBytes (elf, "\xF2\x45\x0F", 3);
+        ElfAddBytes (elf, "\xF2\x45\x0F", 3); // arithm_op xmm[8..14], xmm[9..15]
 
     switch (el->ind[0])
     {
         case '+':
-            ElfAddBytes (elf, "\x58", 1);
+            ElfAddBytes (elf, "\x58", 1); // arithm_op = addsd
             break;
         case '-':
-            ElfAddBytes (elf, "\x5C", 1);
+            ElfAddBytes (elf, "\x5C", 1); // arithm_op = subsd
             break;
         case '*':
-            ElfAddBytes (elf, "\x59", 1);
+            ElfAddBytes (elf, "\x59", 1); // arithm_op = mulsd
             break;
         case '/':
-            ElfAddBytes (elf, "\x5E", 1);
+            ElfAddBytes (elf, "\x5E", 1); // arithm_op = divsd
             break;
         // case '^': // ToDo: Deleted operator
             // fprintf (asm_text, "pow\n");
@@ -790,9 +759,46 @@ bool PrintArithOper (Elf* elf, element* el, Stack* vars)
             return 1;
     }
 
-    char num_register = ((elf->xmm_counter - 2) % 8) * 8 + (elf->xmm_counter - 1) % 8 + 0xC0;
+    char num_registers = ((elf->xmm_counter - 2) % 8) * 8 + (elf->xmm_counter - 1) % 8 + 0xC0;
     elf->xmm_counter -= 1;
-    ElfAddBytes (elf, &num_register, 1);
+    ElfAddBytes (elf, &num_registers, 1);
+    return 0;
+}
+
+bool PrintSaveXMM   (Elf* elf)
+{
+    assert (elf);
+
+    for (char i_xmm = elf->xmm_counter - 1; i_xmm >= 0; i_xmm--)
+    {
+        // ToDo: Delete copypaste
+        // movq rax, xmm?
+        ElfAddBytes (elf, (i_xmm < 8) ? "\x66\x48\x0F\x7E" : "\x66\x4C\x0F\x7E", 4);
+        char num_register = (i_xmm % 8) * 8 + 0xC0;
+        ElfAddBytes (elf, &num_register, 1); 
+
+        // push rax
+        ElfAddBytes (elf, "\x50", 1);
+    }
+
+    return 0;
+}
+
+bool PrintLoadXMM   (Elf* elf)
+{
+    assert (elf);
+
+    for (char i_xmm = 0; i_xmm < elf->xmm_counter - 1; i_xmm++) // - 1 --- arg was added
+    {
+        ElfAddBytes (elf, "\x58", 1); // 0x58 = pop rax
+
+        ElfAddBytes (elf, (i_xmm < 8) ? "\x66\x48\x0F\x6E": // movq xmm?, rax
+                                        "\x66\x4C\x0F\x6E", // movq xmm?, rax
+                                        4);
+        char num_register = (i_xmm % 8) * 8 + 0xC0;
+        ElfAddBytes (elf, &num_register, 1);
+    }
+
     return 0;
 }
 

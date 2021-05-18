@@ -14,6 +14,7 @@ CompileResult
 Reflections
 *.o
 AllDumps
+.vscode
 
 # User-specific files
 *.rsuser

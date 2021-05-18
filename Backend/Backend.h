@@ -106,7 +106,7 @@ bool ElfDump (Elf* elf);
 
 bool ElfLog  (Elf* elf);
 
-void GoAsm (Tree* tree);
+void GoElf (Tree* tree);
 
 bool PrintDec  (Elf* elf, element* el);
 

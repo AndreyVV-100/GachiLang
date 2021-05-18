@@ -15,6 +15,7 @@ Reflections
 *.o
 AllDumps
 .vscode
+gcm
 
 # User-specific files
 *.rsuser

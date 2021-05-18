@@ -1,8 +1,0 @@
-push 0
-pop rax
-push 0
-pop [rax]
-push 2
-pop [rax + 1]
-call :♂sex♂
-hlt

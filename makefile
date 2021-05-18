@@ -1,10 +1,4 @@
-all: TreeBase/Tree.cpp TreeBase/Stack.cpp Frontend Backend Compiler
-
-Frontend: Frontend/Frontend.cpp
+all: TreeBase/Tree.cpp TreeBase/Stack.cpp Frontend/Frontend.cpp Backend/Backend.cpp
 	g++ Frontend/Frontend.cpp TreeBase/Tree.cpp TreeBase/Stack.cpp -Wall -o Frontend.out
-
-Backend: Backend/Backend.cpp
 	g++ Backend/Backend.cpp TreeBase/Tree.cpp TreeBase/Stack.cpp -Wall -o Backend.out
-
-Compiler: Compiler.cpp
-	g++ Compiler.cpp -Wall -o Compiler.out
+	g++ Compiler.cpp -Wall -o gcm

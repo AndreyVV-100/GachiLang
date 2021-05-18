@@ -1,5 +1,17 @@
 ﻿#include "Backend.h"
 
+int main (int argc, const char** argv)
+{
+    Tree code = {};
+    TreeConstructor (&code);
+
+    if (LoadTree (&code))
+        GoAsm (&code);
+
+    TreeDestructor (&code);
+    return 0;
+}
+
 bool ElfConstructor (Elf* elf)
 {
     assert (elf);

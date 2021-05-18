@@ -1,24 +1,19 @@
-#include "Backend/Backend.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main (int argc, char** argv)
 {
-    // Frontend:
-    // ToDo:
-    // system ("Frontend.out");
-    // ...
-    // Or makefile
-    Tree code = {};
+    const size_t buf_size = 256;
+    char frontend_call[buf_size] = "./Frontend.out ";
+    strcat (frontend_call, (argc > 1) ? argv[1] : "Examples/SqrtTripleDick.gcm");
+    
+    printf ("Calling frontend...\n");
+    system (frontend_call);
 
-    if (GoTree (&code, (argc > 1) ? argv[1] : "Examples/SqrtTripleDick.gcm"))
-    {
-        TreeDestructor (&code);
-        return 0;
-    }
-    // CreateGraph (&code);
+    printf ("Calling backend...\n");
+    system ("./Backend.out");
 
-    // Backend:
-    GoAsm  (&code);
-
-    TreeDestructor (&code);
+    printf ("Compiling was ended!\n");
     return 0;
 }

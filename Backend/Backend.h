@@ -1,4 +1,4 @@
-#include "../Tree/Stack.h"
+#include "../TreeBase/Tree.h"
 
 #define print_ass assert (elf);   \
                   assert (el);    \

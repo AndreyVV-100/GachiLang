@@ -1,15 +1,11 @@
 #include "Tree.h"
-#include <windows.h>
 
 int main ()
 {
-    SetConsoleCP (65001);
-    SetConsoleOutputCP (65001);
-
     Tree tree = {};
     GoTree (&tree, "../Examples/pr1.txt");
 
-    CreateGraph  (&tree); 
+    // CreateGraph  (&tree); 
     
     element* elems = tree.stk.buffer;
 

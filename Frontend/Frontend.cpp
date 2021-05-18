@@ -1,116 +1,23 @@
-#include "Stack.h"
+#include "Frontend.h"
 
-element* PARSE_ERR = (element*) 1;
+// ToDo: TreeConstructor in main
 
-void TreeConstructor (Tree* tree)
+int main (int argc, const char** argv)
 {
-    assert (tree);
-
-    const size_t stk_size = 1000;
-    tree->head = nullptr;
-    StackConstructor (&(tree->stk), stk_size);
-    return;
-}
-
-void TreeDestructor (Tree* tree)
-{
-    assert (tree);
-
-    StackDestructor (&(tree->stk));
-    tree->head = nullptr;
-
-    return;
-}
-
-bool ElementConstructor (Tree* tree, Types type, char** ind, size_t len)
-{
-    char* str = nullptr;
-
-    if (*ind)
+    if (argc < 2)
     {
-        str = (char*) calloc (len + 1, sizeof (*str));
-        if (!str)
-        {
-            printf ("Memory error!\n");
-            return 1;
-        }
-
-        strncpy (str, *ind, len);
-        *ind += len;
+        printf ("Error: No file name input.\n");
+        return 0;
     }
-    else
-        assert (!len);
 
-    element push = { type, nullptr, nullptr, str, len };
-    StackPush (&(tree->stk), push);
+    Tree code = {};
+    TreeConstructor (&code);
 
-    if (tree->stk.status_error != STK_GOOD)
-        return 1;
+    if (GoTree (&code, argv[1]) == 0)
+        SaveTree (&code);
 
+    TreeDestructor (&code);
     return 0;
-}
-
-void ElementDestructor (element* el)
-{
-    assert (el);
-
-    free (el->ind);
-    *el = STK_POISON;
-    return;
-}
-
-void CreateGraph (Tree* tree)
-{
-    assert (tree);
-
-    FILE* graph = fopen ("AllDumps/out.dot", "w");
-    assert (graph);
-    fprintf (graph, "digraph G{\n" "rankdir = HR;\n node[shape=box];\n");
-
-    if (tree->head)
-    {
-        fprintf (graph, "\"Point: %p\\n Type: %d\\n %s\";\n",
-            tree->head, tree->head->type, tree->head->ind);
-        ElementGraph (graph, tree->head);
-    }
-    else
-        fprintf (graph, "\"No elements\";\n");
-
-    fprintf (graph, "}");
-    fclose (graph);
-
-    system ("dot -Tpng AllDumps\\out.dot -o AllDumps\\gr.png");
-    system ("start AllDumps\\gr.png");
-
-    return;
-}
-
-void ElementGraph (FILE* graph, element* el)
-{
-    assert (graph);
-    assert (el);
-
-    if (el->left > PARSE_ERR)
-    {
-        fprintf (graph, "\"Point: %p\\n Type: %d\\n %s\" -> "
-                        "\"Point: %p\\n Type: %d\\n %s\";\n",
-                el,             el->type,       el->ind,
-                el->left, el->left->type, el->left->ind);
-
-        ElementGraph (graph, el->left);
-    }
-
-    if (el->right > PARSE_ERR)
-    {
-        fprintf (graph, "\"Point: %p\\n Type: %d\\n %s\" -> "
-                        "\"Point: %p\\n Type: %d\\n %s\";\n",
-                        el,        el->type,        el->ind,
-                 el->right, el->right->type, el->right->ind);
-
-        ElementGraph (graph, el->right);
-    }
-
-    return;
 }
 
 bool GoTree (Tree* tree, const char* file_path)
@@ -136,7 +43,6 @@ bool LexicalAnalyze (Tree* tree, const char* file_path)
     if (!ReadTxt (&code, file_path))
         return 1;
 
-    TreeConstructor (tree);
     size_t line_now = 1;
     char* code_now = code;
     SkipSpaces (&code_now, &line_now);
@@ -198,45 +104,6 @@ bool LexicalParse (Tree* tree)
     
     tree->head = tree->head->right;
     return 0;
-}
-
-int CountSize (FILE* file)
-{
-    fseek (file, 0, SEEK_END);
-    size_t num_symbols = ftell (file);
-    fseek (file, 0, SEEK_SET);
-
-    return num_symbols;
-}
-
-size_t ReadTxt (char** text, const char* file_name)
-{
-    assert (text);
-    assert (file_name);
-
-    FILE* file = fopen (file_name, "r");
-    if (file == nullptr)
-    {
-        printf ("[Input error] Unable to open file \"%s\"\n", file_name);
-        return 0;
-    }
-
-    size_t num_symbols = CountSize (file);
-
-    *text = (char*)calloc (num_symbols + 4, sizeof (**text));
-
-    if (*text == nullptr)
-    {
-        printf ("[Error] Unable to allocate memory\n");
-        return 0;
-    }
-
-    fread (*text, sizeof (**text), num_symbols, file);
-    fclose (file);
-
-    (*text)[num_symbols] = '\0';
-
-    return num_symbols;
 }
 
 void  SkipSpaces (char** code, size_t* line_now)

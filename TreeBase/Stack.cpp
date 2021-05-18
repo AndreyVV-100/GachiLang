@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <assert.h>
+#include <malloc.h>
+#include <string.h>
+#include <time.h>
 #include "Stack.h"
 
 void StackConstructor (Stack* stk, const size_t max_size)

@@ -6,13 +6,49 @@
 	@copyright GNU GPL
 */
 
-#include <time.h>
-#include "Tree.h"
-
 #define ERR_FREE (stk_type*) 228
 #define ASSERT_OK if (StackError (stk)) { StackLog (stk); return;}
 #define ASSERT_OK_POP if (StackError (stk)) { StackLog (stk); return STK_POISON;}
 
+enum Types
+{
+    NIL   = 0,
+    DEC   = 1,
+    FUNC  = 2,
+    LR    = 3,
+    PARAM = 4,
+    BODY  = 5,
+    ARITH = 6,
+    NUM   = 7,
+    VAR   = 8,
+    IND   = 9,
+    RET   = 10,
+    IF    = 11,
+    WHILE = 12,
+    CALL  = 13,
+    EQUAL = 14,
+    COND  = 15
+};
+
+struct element
+{
+    Types type      = NIL;
+    element* left   = nullptr;
+    element* right  = nullptr;
+    char* ind       = nullptr;
+    size_t len      = 0;
+    char var_pos    = 0;
+};
+
+
+typedef element stk_type;
+typedef unsigned long long storm;
+
+/*!
+    Bad ded idet v botalku ("v" = "b", "ku" didn`t fit).
+*/
+
+const storm STORMY_PETREL = 0xBADDED1DE7BB07A1;
 
 //! This is list of errors with them values.
 
@@ -44,6 +80,22 @@ const size_t   STK_RESIZE = 2;
 const int STK_HASH = 2 * sizeof (storm) + 3 * sizeof (size_t) +
 					sizeof (stk_type*) + sizeof (int) + 2 * sizeof (unsigned long long);
 //! @}
+
+struct Stack
+{
+    storm stormy_petrel_begin = STORMY_PETREL;
+
+    stk_type* buffer = nullptr;
+    size_t	size = 0,
+        capacity = 0,
+        min_capacity = 0;
+    int status_error = 12; // See stack_errors in Stack.h
+
+    unsigned long long stk_hash = 0;
+    unsigned long long buf_hash = 0;
+
+    storm stormy_petrel_end = STORMY_PETREL;
+};
 
 /*!
 	This function initializes your stack.
